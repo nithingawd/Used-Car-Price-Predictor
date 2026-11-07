@@ -31,7 +31,55 @@ cleaning:
 
 features:
   target_column: "selling_price"
-  brand_tier_mapping: {}
+  rare_brand_threshold: 30
+  rare_fuel_threshold: 40
+  luxury_brands:
+    - "Audi"
+    - "Bentley"
+    - "Bmw"
+    - "Ferrari"
+    - "Jaguar"
+    - "Land Rover"
+    - "Lexus"
+    - "Maserati"
+    - "Mercedes-Amg"
+    - "Mercedes-Benz"
+    - "Mini"
+    - "Porsche"
+    - "Rolls-Royce"
+    - "Volvo"
+  brand_tier_mapping:
+    Maruti: "Budget"
+    Tata: "Budget"
+    Datsun: "Budget"
+    Hyundai: "Mid"
+    Ford: "Mid"
+    Honda: "Mid"
+    Mahindra: "Mid"
+    Nissan: "Mid"
+    Renault: "Mid"
+    Skoda: "Mid"
+    Toyota: "Mid"
+    Volkswagen: "Mid"
+    Kia: "Premium"
+    Mg: "Premium"
+    Force: "Premium"
+    Isuzu: "Premium"
+    Jeep: "Premium"
+    Audi: "Luxury"
+    Bmw: "Luxury"
+    Jaguar: "Luxury"
+    Land Rover: "Luxury"
+    Lexus: "Luxury"
+    Mercedes-Amg: "Luxury"
+    Mercedes-Benz: "Luxury"
+    Mini: "Luxury"
+    Volvo: "Luxury"
+    Bentley: "Ultra-Luxury"
+    Ferrari: "Ultra-Luxury"
+    Maserati: "Ultra-Luxury"
+    Porsche: "Ultra-Luxury"
+    Rolls-Royce: "Ultra-Luxury"
 
 models:
   candidates:

@@ -186,6 +186,67 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-012: Stratified Train/Test Split (80/20 on Price Quintiles with Seed 42)
+
+- **Date / Phase:** 2026-11-07 / Phase 3
+- **Context:** The project requires a reproducible, leak-free evaluation protocol separating an 80% training set (12,195 rows) from a locked 20% test set (3,049 rows).
+- **Options considered:**
+  - (a) Pure random splitting without stratification.
+  - (b) Stratified split based on selling price quintiles, with bins discarded after partitioning.
+  - (c) Temporal split based on vehicle age.
+- **Decision:** Adopt option (b) with global seed 42.
+- **Reason:** Stratifying on 5 price quintiles guarantees that budget cars, mainstream commuters, and rare ultra-luxury supercars are equally represented across both train and test partitions within $< 2\%$ deviation. The test set is written to `data/processed/test.csv` and indices to `split_indices.json`, remaining completely locked from all Phase 3 and Phase 4 model training and feature fitting code.
+- **Evidence:** `data/processed/split_indices.json`, `tests/test_features.py` test `test_split_shapes_and_disjoint`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` (`splitting.test_size: 0.2`, `project.random_seed: 42`) and managed by `create_train_test_split()`.
+
+---
+
+### D-013: Candidate Feature Engineering Evaluations and Selection Decisions
+
+- **Date / Phase:** 2026-11-07 / Phase 3
+- **Context:** EDA proposed candidate domain features. Each candidate was independently evaluated via 5-fold cross-validation on `train.csv` only against a baseline Ridge regression model (Baseline CV RMSE: 0.2020):
+  - *Candidate 1 (`km_per_year`):* $\text{km\_driven} / \max(\text{vehicle\_age}, 1)$ $\rightarrow$ RMSE: 0.2018 ($\Delta = -0.0002$) $\rightarrow$ **KEEP**.
+  - *Candidate 2 (`power_per_litre`):* $\text{max\_power} / (\text{engine} / 1000)$ $\rightarrow$ RMSE: 0.2016 ($\Delta = -0.0005$) $\rightarrow$ **KEEP**.
+  - *Candidate 3 (`log_km_driven`):* $\log(1 + \text{km\_driven})$ $\rightarrow$ RMSE: 0.2025 ($\Delta = +0.0004$) $\rightarrow$ **REJECT**. Degrades linear scores when km is already capped at 500,000 km.
+  - *Candidate 4 (`is_luxury_brand`):* Binary indicator for luxury/ultra-luxury marques $\rightarrow$ RMSE: 0.2014 ($\Delta = -0.0006$) $\rightarrow$ **KEEP**.
+  - *Candidate 5 (`age_x_power`):* Interaction between vehicle age and engine power $\rightarrow$ RMSE: 0.1925 ($\Delta = -0.0095$) $\rightarrow$ **KEEP**. Substantially benefits linear baselines by capturing accelerated power depreciation.
+  - *Combined Kept Features:* Drops overall Ridge CV RMSE from 0.2020 down to **0.1910** ($\Delta = -0.0110$).
+- **Decision:** Retain `km_per_year`, `power_per_litre`, `is_luxury_brand`, and `age_x_power`; reject `log_km_driven`.
+- **Reason:** Every retained feature demonstrably improves cross-validation accuracy on the training partition and reflects physical domain validity.
+- **Evidence:** `reports/tables/feature_checks.csv`.
+- **Impact / how to reverse:** Implemented in `DomainFeatureEngineer` inside `src/carprice/features.py`.
+
+---
+
+### D-014: High-Cardinality Model Feature Encoding (Cross-Validated TargetEncoder)
+
+- **Date / Phase:** 2026-11-07 / Phase 3
+- **Context:** The `model` feature contains ~120 unique categorical levels, posing a risk of dimensionality explosion and sparse splits if one-hot encoded.
+- **Options considered:**
+  - (a) One-Hot Encoding with minimum frequency grouping (`min_frequency=10`).
+  - (b) Scikit-learn's `TargetEncoder` with internal 5-fold cross-fitting (`smooth="auto"`).
+- **Decision:** Adopt option (b) `TargetEncoder`.
+- **Reason:** 5-fold cross-validation on `train.csv` demonstrated that TargetEncoder achieved superior predictive accuracy (Ridge CV RMSE: 0.3732) compared to One-Hot Encoding (RMSE: 0.3785) while compressing 120 sparse dummy columns into a single informative continuous feature. Target encoding is fit strictly within training folds, preventing target leakage.
+- **Evidence:** `reports/tables/feature_checks.csv`, `tests/test_features.py`.
+- **Impact / how to reverse:** Configured in `build_preprocessor()` inside `src/carprice/features.py`.
+
+---
+
+### D-015: Brand-Tier Mapping and Equity Hierarchy
+
+- **Date / Phase:** 2026-11-07 / Phase 3
+- **Context:** The cleaned dataset features 31 automotive brands, 14 of which have $< 30$ listings.
+- **Options considered:**
+  - (a) Rely entirely on unregularized one-hot dummy variables.
+  - (b) Group all rare brands under a generic "Other" category.
+  - (c) Establish an auditable 5-tier brand hierarchy (`Budget`, `Mid`, `Premium`, `Luxury`, `Ultra-Luxury`) in `configs/config.yaml` combined with a `RareCategoryEncoder(min_frequency=20)`.
+- **Decision:** Adopt option (c).
+- **Reason:** Phase 2 EDA confirmed that brand medians stratify into well-defined valuation bands. Grouping infrequent brands into tiers preserves high-level equity context without creating high-variance sparse columns.
+- **Evidence:** `configs/config.yaml`, `reports/tables/eda_brand_medians.csv`, `reports/tables/eda_rare_brands.csv`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` under `features.brand_tier_mapping` and `features.luxury_brands`.
+
+---
+
 ## Open questions for the student
 
 - None currently for Phase 0.

@@ -21,6 +21,7 @@ data/interim/*
 !data/interim/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/split_indices.json
 
 # Testing and linting caches
 .pytest_cache/

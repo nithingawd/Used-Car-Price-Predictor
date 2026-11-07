@@ -1,6 +1,6 @@
 """Configuration loader and typed configuration dataclasses for the car price prediction system."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 import logging
 from pathlib import Path
@@ -61,6 +61,9 @@ class FeaturesSettings:
 
     target_column: str
     brand_tier_mapping: dict[str, str]
+    rare_brand_threshold: int = 30
+    rare_fuel_threshold: int = 40
+    luxury_brands: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
