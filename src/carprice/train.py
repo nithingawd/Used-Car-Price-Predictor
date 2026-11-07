@@ -27,7 +27,13 @@ from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 
 from carprice.config import AppConfig, get_config
-from carprice.features import build_feature_pipeline
+from carprice.features import (
+    BASE_NUMERIC_FEATURES,
+    build_feature_pipeline,
+    build_ridge_probe,
+    cv_log_rmse,
+    make_cv_splitter,
+)
 from carprice.viz import (
     ACCENT_AMBER,
     BORDER_COLOR,
@@ -47,19 +53,25 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 def get_git_commit_hash() -> str:
     """Retrieve the current short git commit hash for model provenance.
 
+    A "-dirty" suffix means the working tree had uncommitted changes when the model was
+    trained, so the code that produced it is HEAD plus those changes.
+
     Returns:
-        str: 7-character commit SHA or 'unknown'.
+        str: 7-character commit SHA (optionally suffixed "-dirty") or 'unknown'.
     """
     try:
-        res = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+        sha = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
             capture_output=True,
             text=True,
             check=True,
-        )
-        return res.stdout.strip()
-    except Exception:
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
         return "unknown"
+    return f"{sha}-dirty" if status else sha
 
 
 def load_training_data(
@@ -92,8 +104,31 @@ def load_training_data(
     return X, y_inr, y_log
 
 
+ESTIMATOR_CLASSES: dict[str, tuple[type, str, bool]] = {
+    # model_id: (estimator class, preprocessor kind, accepts random_state)
+    "dummy": (DummyRegressor, "tree", False),
+    "linear_regression": (LinearRegression, "linear", False),
+    "ridge": (Ridge, "linear", True),
+    "lasso": (Lasso, "linear", True),
+    "k_nearest_neighbors": (KNeighborsRegressor, "linear", False),
+    "decision_tree": (DecisionTreeRegressor, "tree", True),
+    "random_forest": (RandomForestRegressor, "tree", True),
+    "hist_gradient_boosting": (HistGradientBoostingRegressor, "tree", True),
+    "xgboost": (XGBRegressor, "tree", True),
+    "lightgbm": (LGBMRegressor, "tree", True),
+}
+# Runtime-only arguments that do not affect results; kept out of the config grids.
+RUNTIME_KWARGS: dict[str, dict[str, Any]] = {
+    "random_forest": {"n_jobs": -1},
+    "xgboost": {"n_jobs": -1},
+    "lightgbm": {"n_jobs": -1, "verbose": -1},
+}
+
+
 def get_candidate_models(seed: int) -> dict[str, tuple[Any, str]]:
-    """Instantiate the candidate regression algorithms paired with preprocessor kind.
+    """Instantiate the configured candidate regressors paired with preprocessor kind.
+
+    Hyperparameters come from ``models.candidate_params`` in config.yaml (D-016).
 
     Args:
         seed: Random seed for deterministic reproducibility.
@@ -101,49 +136,18 @@ def get_candidate_models(seed: int) -> dict[str, tuple[Any, str]]:
     Returns:
         dict[str, tuple[Any, str]]: Mapping of model_id to (estimator, preprocessor_kind).
     """
-    return {
-        "dummy": (DummyRegressor(strategy="median"), "tree"),
-        "linear_regression": (LinearRegression(), "linear"),
-        "ridge": (Ridge(alpha=1.0, random_state=seed), "linear"),
-        "lasso": (Lasso(alpha=0.0005, random_state=seed, max_iter=3000), "linear"),
-        "k_nearest_neighbors": (
-            KNeighborsRegressor(n_neighbors=5, weights="distance"),
-            "linear",
-        ),
-        "decision_tree": (
-            DecisionTreeRegressor(max_depth=8, random_state=seed),
-            "tree",
-        ),
-        "random_forest": (
-            RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1),
-            "tree",
-        ),
-        "hist_gradient_boosting": (
-            HistGradientBoostingRegressor(random_state=seed),
-            "tree",
-        ),
-        "xgboost": (
-            XGBRegressor(
-                n_estimators=100,
-                learning_rate=0.1,
-                max_depth=6,
-                random_state=seed,
-                n_jobs=-1,
-            ),
-            "tree",
-        ),
-        "lightgbm": (
-            LGBMRegressor(
-                n_estimators=100,
-                learning_rate=0.1,
-                max_depth=6,
-                random_state=seed,
-                n_jobs=-1,
-                verbose=-1,
-            ),
-            "tree",
-        ),
-    }
+    models_cfg = get_config().models
+    candidates: dict[str, tuple[Any, str]] = {}
+    for model_id in models_cfg.candidates:
+        estimator_cls, kind, seeded = ESTIMATOR_CLASSES[model_id]
+        kwargs = {
+            **models_cfg.candidate_params.get(model_id, {}),
+            **RUNTIME_KWARGS.get(model_id, {}),
+        }
+        if seeded:
+            kwargs["random_state"] = seed
+        candidates[model_id] = (estimator_cls(**kwargs), kind)
+    return candidates
 
 
 def evaluate_single_candidate(
@@ -243,7 +247,7 @@ def run_cv_benchmark(
     config = get_config()
     out_dir = tables_dir or config.paths.tables_dir
     seed = config.project.random_seed
-    cv = KFold(n_splits=config.splitting.cv_folds, shuffle=True, random_state=seed)
+    cv = make_cv_splitter()
     candidates = get_candidate_models(seed=seed)
 
     records: list[dict[str, Any]] = []
@@ -313,8 +317,12 @@ def plot_cv_comparison(
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(sorted_df["model_id"], fontsize=10.5)
-    ax.set_xlabel("Mean 5-Fold Cross-Validation RMSE (Log1p Price Scale)")
-    ax.set_title("Model Comparison: 5-Fold CV Log RMSE with Error Bars")
+    best_row = sorted_df.loc[best_idx]
+    ax.set_xlabel("Mean 5-fold CV RMSE (log1p price)")
+    ax.set_title(
+        f"{best_row['model_id']} has the lowest untuned CV error "
+        f"({best_row['log_rmse_mean']:.4f} log RMSE)"
+    )
     ax.set_xlim(0, max(sorted_df["log_rmse_mean"]) * 1.25)
     ax.grid(axis="x", linestyle="--", alpha=0.6)
 
@@ -355,130 +363,66 @@ def prepare_cv_folds(
     return prepared_folds
 
 
-def tune_lightgbm_study(
+def suggest_params(trial: optuna.Trial, space: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Draw one hyperparameter set from a config search space, in key order.
+
+    Args:
+        trial: Active Optuna trial.
+        space: Mapping of parameter name to {type, low, high, step?, log?}.
+
+    Returns:
+        dict[str, Any]: Suggested hyperparameters.
+
+    Raises:
+        ValueError: If a parameter type is not 'int' or 'float'.
+    """
+    params: dict[str, Any] = {}
+    for name, spec in space.items():
+        if spec["type"] == "int":
+            params[name] = trial.suggest_int(
+                name, spec["low"], spec["high"], step=spec.get("step", 1)
+            )
+        elif spec["type"] == "float":
+            params[name] = trial.suggest_float(
+                name, spec["low"], spec["high"], log=spec.get("log", False)
+            )
+        else:
+            raise ValueError(f"Unsupported search-space type for '{name}': {spec['type']}")
+    return params
+
+
+def tune_model_study(
+    model_name: str,
     prepared_folds: list[tuple[np.ndarray, pd.Series, np.ndarray, pd.Series]],
     n_trials: int,
     seed: int,
 ) -> optuna.Study:
-    """Run Optuna hyperparameter study for LightGBM on 5-fold CV log RMSE.
+    """Run a seeded Optuna TPE study minimising mean CV log RMSE for one model.
 
     Args:
+        model_name: Key in ``models.search_spaces`` (and create_tuned_estimator).
         prepared_folds: Pre-transformed fold feature tuples.
         n_trials: Number of optimization trials.
-        seed: Random seed.
+        seed: Random seed for the sampler and the estimator.
 
     Returns:
         optuna.Study: Completed optimization study.
     """
-    sampler = optuna.samplers.TPESampler(seed=seed)
-    study = optuna.create_study(direction="minimize", sampler=sampler)
+    models_cfg = get_config().models
+    space = models_cfg.search_spaces[model_name]
+    study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=seed))
 
     def objective(trial: optuna.Trial) -> float:
-        params = {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 350, step=50),
-            "max_depth": trial.suggest_int("max_depth", 4, 10),
-            "num_leaves": trial.suggest_int("num_leaves", 15, 63),
-            "learning_rate": trial.suggest_float("learning_rate", 0.02, 0.2, log=True),
-            "min_child_samples": trial.suggest_int("min_child_samples", 10, 40),
-            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
-            "random_state": seed,
-            "n_jobs": -1,
-            "verbose": -1,
-        }
+        params = suggest_params(trial, space)
         fold_rmses: list[float] = []
         for X_tr, y_tr, X_val, y_val in prepared_folds:
-            model = LGBMRegressor(**params)
+            model = create_tuned_estimator(model_name, params, seed)
             model.fit(X_tr, y_tr)
             preds = model.predict(X_val)
             fold_rmses.append(float(np.sqrt(mean_squared_error(y_val, preds))))
         return float(np.mean(fold_rmses))
 
-    study.optimize(objective, n_trials=n_trials)
-    return study
-
-
-def tune_xgboost_study(
-    prepared_folds: list[tuple[np.ndarray, pd.Series, np.ndarray, pd.Series]],
-    n_trials: int,
-    seed: int,
-) -> optuna.Study:
-    """Run Optuna hyperparameter study for XGBoost on 5-fold CV log RMSE.
-
-    Args:
-        prepared_folds: Pre-transformed fold feature tuples.
-        n_trials: Number of optimization trials.
-        seed: Random seed.
-
-    Returns:
-        optuna.Study: Completed optimization study.
-    """
-    sampler = optuna.samplers.TPESampler(seed=seed)
-    study = optuna.create_study(direction="minimize", sampler=sampler)
-
-    def objective(trial: optuna.Trial) -> float:
-        params = {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 350, step=50),
-            "max_depth": trial.suggest_int("max_depth", 4, 9),
-            "learning_rate": trial.suggest_float("learning_rate", 0.02, 0.2, log=True),
-            "min_child_weight": trial.suggest_int("min_child_weight", 1, 8),
-            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
-            "random_state": seed,
-            "n_jobs": -1,
-        }
-        fold_rmses: list[float] = []
-        for X_tr, y_tr, X_val, y_val in prepared_folds:
-            model = XGBRegressor(**params)
-            model.fit(X_tr, y_tr)
-            preds = model.predict(X_val)
-            fold_rmses.append(float(np.sqrt(mean_squared_error(y_val, preds))))
-        return float(np.mean(fold_rmses))
-
-    study.optimize(objective, n_trials=n_trials)
-    return study
-
-
-def tune_hist_gb_study(
-    prepared_folds: list[tuple[np.ndarray, pd.Series, np.ndarray, pd.Series]],
-    n_trials: int,
-    seed: int,
-) -> optuna.Study:
-    """Run Optuna hyperparameter study for HistGradientBoosting on 5-fold CV log RMSE.
-
-    Args:
-        prepared_folds: Pre-transformed fold feature tuples.
-        n_trials: Number of optimization trials.
-        seed: Random seed.
-
-    Returns:
-        optuna.Study: Completed optimization study.
-    """
-    sampler = optuna.samplers.TPESampler(seed=seed)
-    study = optuna.create_study(direction="minimize", sampler=sampler)
-
-    def objective(trial: optuna.Trial) -> float:
-        params = {
-            "max_iter": trial.suggest_int("max_iter", 100, 300, step=50),
-            "learning_rate": trial.suggest_float("learning_rate", 0.02, 0.2, log=True),
-            "max_leaf_nodes": trial.suggest_int("max_leaf_nodes", 15, 63),
-            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 10, 40),
-            "l2_regularization": trial.suggest_float("l2_regularization", 1e-3, 10.0, log=True),
-            "random_state": seed,
-        }
-        fold_rmses: list[float] = []
-        for X_tr, y_tr, X_val, y_val in prepared_folds:
-            model = HistGradientBoostingRegressor(**params)
-            model.fit(X_tr, y_tr)
-            preds = model.predict(X_val)
-            fold_rmses.append(float(np.sqrt(mean_squared_error(y_val, preds))))
-        return float(np.mean(fold_rmses))
-
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(objective, n_trials=n_trials, timeout=models_cfg.timeout_seconds)
     return study
 
 
@@ -504,16 +448,14 @@ def run_tuning(
     mod_dir = models_dir or config.paths.models_dir
     n_trials = config.models.tuning_trials
     seed = config.project.random_seed
-    cv = KFold(n_splits=config.splitting.cv_folds, shuffle=True, random_state=seed)
 
     logger.info("Precomputing leak-free CV folds for fast tuning...")
-    prep_folds = prepare_cv_folds(X, y_log, cv, kind="tree")
+    prep_folds = prepare_cv_folds(X, y_log, make_cv_splitter(), kind="tree")
 
     logger.info("Beginning Optuna hyperparameter optimization (%d trials each)", n_trials)
     studies: dict[str, optuna.Study] = {
-        "hist_gradient_boosting": tune_hist_gb_study(prep_folds, n_trials, seed),
-        "xgboost": tune_xgboost_study(prep_folds, n_trials, seed),
-        "lightgbm": tune_lightgbm_study(prep_folds, n_trials, seed),
+        name: tune_model_study(name, prep_folds, n_trials, seed)
+        for name in config.models.search_spaces
     }
 
     best_summary: dict[str, Any] = {}
@@ -556,6 +498,7 @@ def plot_tuning_diagnostics(
     figures_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Optimization History
+    winner = min(studies, key=lambda name: studies[name].best_value)
     fig1, ax1 = plt.subplots(figsize=(9, 5.5))
     for i, (name, study) in enumerate(studies.items()):
         trial_values = [t.value for t in study.trials if t.value is not None]
@@ -570,28 +513,34 @@ def plot_tuning_diagnostics(
             color=color,
             linewidth=2,
         )
-    ax1.set_xlabel("Optimization Trial Number")
-    ax1.set_ylabel("Best Observed 5-Fold CV RMSE (Log Scale)")
-    ax1.set_title("Hyperparameter Optimization Convergence History")
+    ax1.set_xlabel("Optimization trial number")
+    ax1.set_ylabel("Best 5-fold CV RMSE so far (log1p price)")
+    ax1.set_title(
+        f"Tuned {winner} reaches the lowest CV error ({studies[winner].best_value:.4f} log RMSE)"
+    )
     ax1.legend(frameon=True, facecolor=SURFACE_COLOR, edgecolor=BORDER_COLOR)
     ax1.grid(True, linestyle="--", alpha=0.6)
     hist_path = save_figure(fig1, figures_dir / "tuning_history.png")
 
-    # 2. Parameter Importances for best model (LightGBM)
-    lgbm_study = studies.get("lightgbm")
+    # 2. Parameter importances for the winning model's study
     fig2, ax2 = plt.subplots(figsize=(9, 5.5))
-    if lgbm_study:
-        try:
-            importances = optuna.importance.get_param_importances(lgbm_study)
-            p_names = list(importances.keys())[::-1]
-            p_vals = list(importances.values())[::-1]
-            ax2.barh(p_names, p_vals, color=PRIMARY_TEAL, edgecolor=BORDER_COLOR, height=0.6)
-            ax2.set_xlabel("Relative Parameter Importance (fANOVA)")
-            ax2.set_title("Hyperparameter Importance for LightGBM Regressor")
-            ax2.grid(axis="x", linestyle="--", alpha=0.6)
-        except Exception as e:
-            logger.warning("Could not compute fANOVA importances: %s", e)
-            ax2.text(0.5, 0.5, "Importances not computed", ha="center")
+    try:
+        importances = optuna.importance.get_param_importances(studies[winner])
+    except (RuntimeError, ValueError) as err:
+        logger.warning("Could not compute fANOVA importances: %s", err)
+        ax2.text(0.5, 0.5, "Importances not computed", ha="center")
+    else:
+        top_param = next(iter(importances))
+        ax2.barh(
+            list(importances)[::-1],
+            list(importances.values())[::-1],
+            color=PRIMARY_TEAL,
+            edgecolor=BORDER_COLOR,
+            height=0.6,
+        )
+        ax2.set_xlabel("Relative parameter importance (fANOVA, share of variance)")
+        ax2.set_title(f"{top_param} matters most when tuning {winner}")
+        ax2.grid(axis="x", linestyle="--", alpha=0.6)
     imp_path = save_figure(fig2, figures_dir / "tuning_param_importances.png")
 
     return hist_path, imp_path
@@ -645,7 +594,7 @@ def fit_and_persist_pipelines(
     ridge_inner = Pipeline(
         [
             ("features", build_feature_pipeline(kind="linear")),
-            ("model", Ridge(alpha=1.0, random_state=seed)),
+            ("model", get_candidate_models(seed)["ridge"][0]),
         ]
     )
     ridge_pipeline = TransformedTargetRegressor(
@@ -682,7 +631,7 @@ def fit_and_persist_pipelines(
     logger.info("Saved final tuned pipeline to %s", final_path)
 
     # 3. Compute Out-of-fold Residual Quantiles for 80% Prediction Interval
-    cv = KFold(n_splits=config.splitting.cv_folds, shuffle=True, random_state=seed)
+    cv = make_cv_splitter()
     oof_log_preds = np.zeros(len(X), dtype=float)
     for tr_idx, val_idx in cv.split(X, y_log):
         fold_est = create_tuned_estimator(winner_name, winner_params, seed)
@@ -747,12 +696,65 @@ def fit_and_persist_pipelines(
     return final_path, baseline_path, card
 
 
+def run_encoder_comparison(
+    X: pd.DataFrame,
+    y_log: pd.Series,
+    best_params: dict[str, Any],
+    tables_dir: Path | None = None,
+) -> pd.DataFrame:
+    """Compare TargetEncoder vs one-hot for ``model`` on train-only CV (evidence for D-014).
+
+    Two model families are checked: the Ridge feature probe and the tuned winner.
+
+    Args:
+        X: Training features.
+        y_log: log1p(selling_price).
+        best_params: Tuned parameters (from best_params.json).
+        tables_dir: Output directory for encoder_comparison.csv.
+
+    Returns:
+        pd.DataFrame: One row per (model family, encoding).
+    """
+    out_dir = tables_dir or get_config().paths.tables_dir
+    seed = get_config().project.random_seed
+    winner = min(best_params, key=lambda k: best_params[k]["best_cv_rmse"])
+    records = []
+    for encoding in ["target", "onehot"]:
+        ridge_rmse = cv_log_rmse(build_ridge_probe(BASE_NUMERIC_FEATURES, encoding), X, y_log)
+        tuned_pipe = Pipeline(
+            [
+                ("features", build_feature_pipeline(kind="tree", model_encoding=encoding)),
+                ("model", create_tuned_estimator(winner, best_params[winner]["best_params"], seed)),
+            ]
+        )
+        tuned_rmse = cv_log_rmse(tuned_pipe, X, y_log)
+        records.append(
+            {
+                "model_family": "ridge_probe",
+                "model_encoding": encoding,
+                "cv_log_rmse": round(ridge_rmse, 4),
+            }
+        )
+        records.append(
+            {
+                "model_family": f"{winner}_tuned",
+                "model_encoding": encoding,
+                "cv_log_rmse": round(tuned_rmse, 4),
+            }
+        )
+    table = pd.DataFrame(records).sort_values(["model_family", "model_encoding"])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    table.to_csv(out_dir / "encoder_comparison.csv", index=False)
+    logger.info("Saved encoder comparison to %s", out_dir / "encoder_comparison.csv")
+    return table
+
+
 def main() -> None:
     """Command-line interface to execute training stages."""
     parser = argparse.ArgumentParser(description="Used Car Price Prediction Model Training CLI")
     parser.add_argument(
         "--stage",
-        choices=["cv", "tune", "final", "all"],
+        choices=["cv", "tune", "final", "checks", "all"],
         default="all",
         help="Pipeline execution stage (default: all)",
     )
@@ -779,6 +781,10 @@ def main() -> None:
         with best_params_path.open("r", encoding="utf-8") as f:
             best_params = json.load(f)
         fit_and_persist_pipelines(X, y_inr, y_log, best_params)
+
+    if args.stage in ["checks", "all"]:
+        with (config.paths.models_dir / "best_params.json").open("r", encoding="utf-8") as f:
+            run_encoder_comparison(X, y_log, json.load(f))
 
     logger.info("Stage '%s' completed successfully.", args.stage)
 

@@ -190,10 +190,15 @@ def drop_exact_duplicates(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEn
     cleaned = df.drop_duplicates(keep="first").copy()
     rows_after = len(cleaned)
 
-    # Assert no more than 2% rows dropped per project rules (167 / 15411 = ~1.08%)
+    # Project rule: warn if a step drops more than the configured fraction of rows
+    max_drop = get_config().cleaning.max_drop_row_fraction
     drop_pct = dup_count / rows_before
-    if drop_pct > 0.02:
-        logger.warning("Duplicate removal dropped %.2f%% of rows (exceeds 2%%)", drop_pct * 100)
+    if drop_pct > max_drop:
+        logger.warning(
+            "Duplicate removal dropped %.2f%% of rows (limit %.2f%%)",
+            drop_pct * 100,
+            max_drop * 100,
+        )
 
     entry = CleaningLogEntry(
         rule_name="drop_exact_duplicates",
@@ -215,8 +220,9 @@ def fix_invalid_seats(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEntry]
         tuple[pd.DataFrame, CleaningLogEntry]: Transformed DataFrame and log entry.
 
     Raises:
-        AssertionError: If any seats remain outside the 2 to 9 physical range.
+        AssertionError: If any seats remain outside the configured physical range.
     """
+    cleaning = get_config().cleaning
     rows_before = len(df)
     cleaned = df.copy()
     invalid_mask = cleaned["seats"] == 0
@@ -227,17 +233,18 @@ def fix_invalid_seats(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEntry]
         valid_seats = cleaned[cleaned["seats"] > 0]
         model_modes = (
             valid_seats.groupby(["brand", "model"])["seats"]
-            .agg(lambda s: s.mode().iloc[0] if not s.empty else 5)
+            .agg(lambda s: s.mode().iloc[0] if not s.empty else cleaning.default_seats)
             .to_dict()
         )
 
         for idx in cleaned[invalid_mask].index:
             key = (cleaned.at[idx, "brand"], cleaned.at[idx, "model"])
-            imputed = model_modes.get(key, 5)
+            imputed = model_modes.get(key, cleaning.default_seats)
             cleaned.at[idx, "seats"] = imputed
 
-    # Assert all seat values are within 2 to 9
-    assert ((cleaned["seats"] >= 2) & (cleaned["seats"] <= 9)).all(), "Invalid seat count detected"
+    # Assert all seat values are within the configured physical range
+    in_range = cleaned["seats"].between(cleaning.seats_min, cleaning.seats_max)
+    assert in_range.all(), "Invalid seat count detected"
 
     entry = CleaningLogEntry(
         rule_name="fix_invalid_seats",
@@ -259,7 +266,7 @@ def fix_fuel_labels(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEntry]:
         tuple[pd.DataFrame, CleaningLogEntry]: Transformed DataFrame and log entry.
 
     Raises:
-        AssertionError: If unexpected categories under 40 rows remain (excluding LPG).
+        AssertionError: If any fuel category has fewer rows than the configured threshold.
     """
     rows_before = len(df)
     cleaned = df.copy()
@@ -269,10 +276,11 @@ def fix_fuel_labels(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEntry]:
     if electric_count > 0:
         cleaned.loc[electric_mask, "fuel_type"] = "Petrol"
 
-    # Verify category counts (only LPG is allowed to have < 40 rows)
+    # Verify every remaining fuel category is large enough for stratified CV folds
+    min_rows = get_config().cleaning.rare_fuel_threshold
     counts = cleaned["fuel_type"].value_counts()
     for fuel, count in counts.items():
-        if count < 40 and fuel != "LPG":
+        if count < min_rows:
             raise AssertionError(f"Unexpected rare fuel type: {fuel} has only {count} rows")
 
     entry = CleaningLogEntry(
@@ -549,46 +557,52 @@ def audit_logical_consistency(
     Returns:
         tuple[pd.DataFrame, dict[str, pd.DataFrame]]: Summary table and dict of anomaly subsets.
     """
+    config = get_config()
+    cleaning, audit = config.cleaning, config.audit
     total = len(df)
     subsets: dict[str, pd.DataFrame] = {}
 
-    # Check 1: Seats outside 2 to 9
-    seats_mask = (df["seats"] < 2) | (df["seats"] > 9)
+    # Check 1: Seats outside the physical range
+    seats_mask = ~df["seats"].between(cleaning.seats_min, cleaning.seats_max)
     subsets["seats_anomalies"] = df[seats_mask].copy()
 
     # Check 2: Vehicle age of 0
     age_zero_mask = df["vehicle_age"] == 0
     subsets["age_zero"] = df[age_zero_mask].copy()
 
-    # Check 3: Km per year > 100,000
+    # Check 3: Very high annual usage
     safe_age = df["vehicle_age"].replace(0, 1)
-    km_rate_mask = (df["km_driven"] / safe_age) > 100000
+    km_rate_mask = (df["km_driven"] / safe_age) > audit.max_km_per_year
     subsets["km_per_year_high"] = df[km_rate_mask].copy()
 
-    # Check 4: Mileage < 8 or > 30 kmpl
-    mileage_mask = (df["mileage"] < 8.0) | (df["mileage"] > 30.0)
+    # Check 4: Fuel efficiency outside the plausible band
+    mileage_mask = (df["mileage"] < audit.mileage_min_kmpl) | (
+        df["mileage"] > audit.mileage_max_kmpl
+    )
     subsets["mileage_outliers"] = df[mileage_mask].copy()
 
-    # Check 5: Max power per litre outside 25 to 155 bhp/L
+    # Check 5: Power density outside the plausible band
     power_density = df["max_power"] / (df["engine"] / 1000.0)
-    power_density_mask = (power_density < 25.0) | (power_density > 155.0)
+    power_density_mask = (power_density < audit.power_per_litre_min) | (
+        power_density > audit.power_per_litre_max
+    )
     subsets["power_density_outliers"] = df[power_density_mask].copy()
 
-    # Check 6: Selling price below 50,000 INR
-    price_low_mask = df["selling_price"] < 50000
+    # Check 6: Very low selling price
+    price_low_mask = df["selling_price"] < audit.low_price_inr
     subsets["price_below_50k"] = df[price_low_mask].copy()
 
     # Check 7: Electric label rows
     electric_mask = df["fuel_type"] == "Electric"
     subsets["electric_rows"] = df[electric_mask].copy()
 
-    # Check 8: km_driven > 500,000
-    km_outlier_mask = df["km_driven"] > 500000
+    # Check 8: Odometer above the cleaning cap
+    km_outlier_mask = df["km_driven"] > cleaning.km_cap
     subsets["km_outliers"] = df[km_outlier_mask].copy()
 
     checks = [
         (
-            "Seats outside 2 to 9",
+            f"Seats outside {cleaning.seats_min} to {cleaning.seats_max}",
             int(seats_mask.sum()),
             "Data entry error (seats=0) requiring imputation",
         ),
@@ -598,22 +612,25 @@ def audit_logical_consistency(
             "Brand new showroom cars (< 1 year old)",
         ),
         (
-            "Kilometres per year > 100,000",
+            f"Kilometres per year > {audit.max_km_per_year:,}",
             int(km_rate_mask.sum()),
             "Extreme commercial usage or odometer anomalies",
         ),
         (
-            "Mileage outside 8 to 30 kmpl",
+            f"Mileage outside {audit.mileage_min_kmpl:g} to {audit.mileage_max_kmpl:g} kmpl",
             int(mileage_mask.sum()),
             "Supercars (low mileage) or hyper-milers",
         ),
         (
-            "Power per litre outside 25-155 bhp/L",
+            (
+                f"Power per litre outside {audit.power_per_litre_min:g}-"
+                f"{audit.power_per_litre_max:g} bhp/L"
+            ),
             int(power_density_mask.sum()),
             "Naturally aspirated entry vs high-boost turbo",
         ),
         (
-            "Selling price < 50,000 INR",
+            f"Selling price < {audit.low_price_inr:,} INR",
             int(price_low_mask.sum()),
             "Heavily depreciated, scrap, or project cars",
         ),
@@ -623,7 +640,7 @@ def audit_logical_consistency(
             "Toyota Camry hybrids mislabelled as Electric",
         ),
         (
-            "Odometer km_driven > 500,000",
+            f"Odometer km_driven > {cleaning.km_cap:,}",
             int(km_outlier_mask.sum()),
             "Extreme high-leverage outliers requiring capping",
         ),

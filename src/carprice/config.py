@@ -40,19 +40,39 @@ class SplittingSettings:
 
     test_size: float
     cv_folds: int
-    stratify_by: str | None
+    stratify_by: str
+    stratify_bins: int
 
 
 @dataclass(frozen=True)
 class CleaningSettings:
-    """Thresholds and bounds for data audit and cleaning."""
+    """Thresholds and bounds for data cleaning."""
 
     km_cap: int
-    min_price: int
-    max_price: int
-    min_year: int
-    max_year: int
     max_drop_row_fraction: float
+    seats_min: int
+    seats_max: int
+    default_seats: int
+    rare_fuel_threshold: int
+
+
+@dataclass(frozen=True)
+class AuditSettings:
+    """Thresholds for the logical-consistency audit (flagging only)."""
+
+    max_km_per_year: int
+    mileage_min_kmpl: float
+    mileage_max_kmpl: float
+    power_per_litre_min: float
+    power_per_litre_max: float
+    low_price_inr: int
+
+
+@dataclass(frozen=True)
+class EdaSettings:
+    """Descriptive thresholds used only by the EDA report tables."""
+
+    rare_brand_report_threshold: int
 
 
 @dataclass(frozen=True)
@@ -60,10 +80,18 @@ class FeaturesSettings:
     """Feature engineering and target definition settings."""
 
     target_column: str
+    rare_category_min_frequency: int
     brand_tier_mapping: dict[str, str]
-    rare_brand_threshold: int = 30
-    rare_fuel_threshold: int = 40
     luxury_brands: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class FeatureCheckSettings:
+    """Settings for the train-only candidate feature and encoder screening."""
+
+    probe_ridge_alpha: float
+    min_rmse_gain: float
+    model_onehot_min_frequency: int
 
 
 @dataclass(frozen=True)
@@ -71,8 +99,10 @@ class ModelsSettings:
     """Model training, candidate algorithms, and tuning configurations."""
 
     candidates: list[str]
+    candidate_params: dict[str, dict[str, Any]]
     tuning_trials: int
     timeout_seconds: int
+    search_spaces: dict[str, dict[str, dict[str, Any]]]
 
 
 @dataclass(frozen=True)
@@ -83,7 +113,10 @@ class AppConfig:
     paths: PathSettings
     splitting: SplittingSettings
     cleaning: CleaningSettings
+    audit: AuditSettings
+    eda: EdaSettings
     features: FeaturesSettings
+    feature_checks: FeatureCheckSettings
     models: ModelsSettings
 
 
@@ -151,7 +184,10 @@ def load_config(config_path: Path | str | None = None) -> AppConfig:
         paths=_build_paths(root, data["paths"]),
         splitting=SplittingSettings(**data["splitting"]),
         cleaning=CleaningSettings(**data["cleaning"]),
+        audit=AuditSettings(**data["audit"]),
+        eda=EdaSettings(**data["eda"]),
         features=FeaturesSettings(**data["features"]),
+        feature_checks=FeatureCheckSettings(**data["feature_checks"]),
         models=ModelsSettings(**data["models"]),
     )
 

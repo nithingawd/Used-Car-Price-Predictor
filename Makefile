@@ -1,4 +1,4 @@
-.PHONY: setup clean clean-data train evaluate app test lint
+.PHONY: setup clean clean-data split train evaluate app test lint
 
 PYTHON := $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,$(if $(wildcard .venv/bin/python),.venv/bin/python,python))
 
@@ -10,6 +10,9 @@ clean:
 
 clean-data:
 	$(PYTHON) tasks.py clean-data
+
+split:
+	$(PYTHON) tasks.py split
 
 train:
 	$(PYTHON) tasks.py train

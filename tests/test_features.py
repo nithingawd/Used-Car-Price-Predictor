@@ -8,9 +8,13 @@ import pytest
 
 from carprice.config import get_config
 from carprice.features import (
+    CANDIDATE_FEATURES,
+    ENGINEERED_FEATURES,
     DomainFeatureEngineer,
     RareCategoryEncoder,
     build_feature_pipeline,
+    build_model_encoder,
+    evaluate_feature_candidates,
 )
 
 
@@ -210,3 +214,42 @@ def test_no_data_leakage() -> None:
     assert len(scaler.mean_) == 10
     expected_mean = float(train_df["vehicle_age"].mean())
     assert np.isclose(scaler.mean_[0], expected_mean, atol=1e-3)
+
+
+def test_default_pipeline_uses_target_encoding_for_model() -> None:
+    """Production pipeline must keep the cross-fitted TargetEncoder for `model` (D-014)."""
+    preprocessor = build_feature_pipeline(kind="tree").named_steps["preprocess"]
+    model_step = {name: pipe for name, pipe, _ in preprocessor.transformers}["model"]
+    assert list(model_step.named_steps) == ["target_enc"]
+
+
+def test_onehot_model_encoding_option(sample_train_df: pd.DataFrame) -> None:
+    """The one-hot alternative fits and an unknown encoding name fails loudly."""
+    X = sample_train_df.drop(columns=["selling_price"])
+    pipe = build_feature_pipeline(kind="tree", model_encoding="onehot")
+    out = pipe.fit_transform(X, np.log1p(sample_train_df["selling_price"]))
+    assert out.shape[0] == len(X)
+    with pytest.raises(ValueError, match="model_encoding"):
+        build_model_encoder("ordinal")
+
+
+def test_feature_checks_are_measured(sample_train_df: pd.DataFrame, tmp_path) -> None:
+    """feature_checks.csv rows are computed: one per candidate plus combined_kept."""
+    big = pd.concat([sample_train_df] * 5, ignore_index=True)
+    big["selling_price"] = big["selling_price"] * (1 + 0.01 * np.arange(len(big)))
+    table = evaluate_feature_candidates(big, tables_dir=tmp_path)
+    expected = [name for name, _, _ in CANDIDATE_FEATURES] + ["combined_kept"]
+    assert table["candidate_feature"].tolist() == expected
+    assert set(table["decision"]) <= {"KEEP", "REJECT"}
+    assert (table["baseline_cv_rmse"] > 0).all()
+    assert (tmp_path / "feature_checks.csv").is_file()
+
+
+def test_saved_feature_checks_match_pipeline_features() -> None:
+    """The KEEP rows in the saved table are exactly the features the pipeline engineers."""
+    table = pd.read_csv(get_config().paths.tables_dir / "feature_checks.csv")
+    kept = table.loc[
+        (table["decision"] == "KEEP") & (table["candidate_feature"] != "combined_kept"),
+        "candidate_feature",
+    ].tolist()
+    assert kept == ENGINEERED_FEATURES

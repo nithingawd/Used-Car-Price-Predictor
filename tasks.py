@@ -104,10 +104,32 @@ def lint() -> int:
     return ret_check or ret_format
 
 
+def run_module(module: str, *args: str) -> int:
+    """Run a carprice module as a script with src/ on the import path.
+
+    Args:
+        module: Dotted module name, e.g. 'carprice.train'.
+        *args: Extra command-line arguments for the module.
+
+    Returns:
+        int: Process return code.
+    """
+    py = str(PYTHON_EXE if PYTHON_EXE.exists() else sys.executable)
+    code = (
+        "import sys, runpy; sys.path.insert(0, 'src'); "
+        f"runpy.run_module('{module}', run_name='__main__')"
+    )
+    return run_command([py, "-c", code, *args])
+
+
+def split() -> int:
+    """Phase 3: write the stratified train/test split and the measured feature checks."""
+    return run_module("carprice.features")
+
+
 def train() -> int:
-    """Execute model training pipeline (placeholder)."""
-    print("Train step not implemented yet (scheduled for Phase 4).")
-    return 0
+    """Phase 4: CV benchmark, Optuna tuning, final pipeline, and encoder comparison."""
+    return run_module("carprice.train", "--stage", "all")
 
 
 def evaluate() -> int:
@@ -127,7 +149,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Used Car Price Predictor task runner")
     parser.add_argument(
         "target",
-        choices=["setup", "clean", "clean-data", "train", "evaluate", "app", "test", "lint"],
+        choices=[
+            "setup",
+            "clean",
+            "clean-data",
+            "split",
+            "train",
+            "evaluate",
+            "app",
+            "test",
+            "lint",
+        ],
         help="Task target to execute",
     )
     args = parser.parse_args()
@@ -136,6 +168,7 @@ def main() -> None:
         "setup": setup,
         "clean": clean,
         "clean-data": clean_data,
+        "split": split,
         "train": train,
         "evaluate": evaluate,
         "app": app,

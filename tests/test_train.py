@@ -4,11 +4,12 @@ import json
 
 import joblib
 import numpy as np
+import optuna
 import pandas as pd
 import pytest
 
 from carprice.config import get_config
-from carprice.train import get_candidate_models, load_training_data
+from carprice.train import get_candidate_models, load_training_data, suggest_params
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -226,3 +227,30 @@ def test_cv_results_file_exists(config) -> None:
     dummy_rmse = df.loc[df["model_id"] == "dummy", "log_rmse_mean"].iloc[0]
     best_rmse = df["log_rmse_mean"].min()
     assert dummy_rmse > best_rmse, "DummyRegressor must have higher RMSE than the best model"
+
+
+def test_candidate_params_follow_config(config) -> None:
+    """Benchmark estimators are built from models.candidate_params (D-016)."""
+    candidates = get_candidate_models(seed=config.project.random_seed)
+    for model_id, params in config.models.candidate_params.items():
+        estimator_params = candidates[model_id][0].get_params()
+        for key, value in params.items():
+            assert estimator_params[key] == value, f"{model_id}.{key}"
+
+
+def test_suggest_params_reads_search_space(config) -> None:
+    """suggest_params returns every configured parameter, in config order."""
+    space = config.models.search_spaces["xgboost"]
+    fixed = {name: spec["low"] for name, spec in space.items()}
+    params = suggest_params(optuna.trial.FixedTrial(fixed), space)
+    assert list(params) == list(space)
+    assert params == fixed
+
+
+def test_model_card_matches_best_params(config, model_card) -> None:
+    """The saved model is the tuned candidate with the lowest CV RMSE in best_params.json."""
+    with (config.paths.models_dir / "best_params.json").open("r", encoding="utf-8") as f:
+        best = json.load(f)
+    winner = min(best, key=lambda k: best[k]["best_cv_rmse"])
+    assert model_card["model_name"] == f"{winner} (Tuned)"
+    assert model_card["best_hyperparameters"] == best[winner]["best_params"]

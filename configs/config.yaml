@@ -18,21 +18,39 @@ paths:
 splitting:
   test_size: 0.2
   cv_folds: 5
-  stratify_by: null
+  # Train/test split is stratified on quantile bins of this column (D-012).
+  stratify_by: "selling_price"
+  stratify_bins: 5
 
 cleaning:
-  # Outlier and validation thresholds (placeholders to be verified during Phase 1 audit)
+  # Thresholds verified during the Phase 1 audit (D-003 to D-008).
   km_cap: 500000
-  min_price: 20000
-  max_price: 25000000
-  min_year: 1995
-  max_year: 2026
   max_drop_row_fraction: 0.02
+  seats_min: 2
+  seats_max: 9
+  # Fallback seat count when a brand/model has no valid seat value (D-006).
+  default_seats: 5
+  # Every fuel category left after cleaning must have at least this many rows.
+  rare_fuel_threshold: 40
+
+audit:
+  # Thresholds for the Phase 1 logical-consistency audit (flag only, never drop).
+  max_km_per_year: 100000
+  mileage_min_kmpl: 8.0
+  mileage_max_kmpl: 30.0
+  power_per_litre_min: 25.0
+  power_per_litre_max: 155.0
+  low_price_inr: 50000
+
+eda:
+  # Descriptive cut-off for listing "rare" brands in eda_rare_brands.csv (Phase 2).
+  # Separate from features.rare_category_min_frequency, which the model uses.
+  rare_brand_report_threshold: 30
 
 features:
   target_column: "selling_price"
-  rare_brand_threshold: 30
-  rare_fuel_threshold: 40
+  # Categorical levels seen fewer times than this in a training fold become "Other" (D-015).
+  rare_category_min_frequency: 20
   luxury_brands:
     - "Audi"
     - "Bentley"
@@ -48,6 +66,8 @@ features:
     - "Porsche"
     - "Rolls-Royce"
     - "Volvo"
+  # Reference grouping for reporting and the GUI only. It is NOT an input to the
+  # model pipeline (see D-015 revision and D-021).
   brand_tier_mapping:
     Maruti: "Budget"
     Tata: "Budget"
@@ -81,6 +101,14 @@ features:
     Porsche: "Ultra-Luxury"
     Rolls-Royce: "Ultra-Luxury"
 
+feature_checks:
+  # Ridge probe used to screen candidate features on train.csv only (D-013).
+  probe_ridge_alpha: 1.0
+  # A candidate is kept only if it lowers CV log RMSE by at least this much.
+  min_rmse_gain: 0.0001
+  # min_frequency for the one-hot alternative when comparing encoders for `model` (D-014).
+  model_onehot_min_frequency: 10
+
 models:
   candidates:
     - "dummy"
@@ -93,6 +121,45 @@ models:
     - "hist_gradient_boosting"
     - "xgboost"
     - "lightgbm"
+  # Untuned settings for the Phase 4 benchmark (D-016).
+  candidate_params:
+    dummy: {strategy: "median"}
+    linear_regression: {}
+    ridge: {alpha: 1.0}
+    lasso: {alpha: 0.0005, max_iter: 3000}
+    k_nearest_neighbors: {n_neighbors: 5, weights: "distance"}
+    decision_tree: {max_depth: 8}
+    random_forest: {n_estimators: 100}
+    hist_gradient_boosting: {}
+    xgboost: {n_estimators: 100, learning_rate: 0.1, max_depth: 6}
+    lightgbm: {n_estimators: 100, learning_rate: 0.1, max_depth: 6}
   tuning_trials: 35
   timeout_seconds: 3600
-
+  # Optuna search spaces (D-018). Key order is the order parameters are suggested,
+  # which matters for reproducing the same TPE trials.
+  search_spaces:
+    hist_gradient_boosting:
+      max_iter: {type: "int", low: 100, high: 300, step: 50}
+      learning_rate: {type: "float", low: 0.02, high: 0.2, log: true}
+      max_leaf_nodes: {type: "int", low: 15, high: 63}
+      min_samples_leaf: {type: "int", low: 10, high: 40}
+      l2_regularization: {type: "float", low: 0.001, high: 10.0, log: true}
+    xgboost:
+      n_estimators: {type: "int", low: 100, high: 350, step: 50}
+      max_depth: {type: "int", low: 4, high: 9}
+      learning_rate: {type: "float", low: 0.02, high: 0.2, log: true}
+      min_child_weight: {type: "int", low: 1, high: 8}
+      subsample: {type: "float", low: 0.6, high: 1.0}
+      colsample_bytree: {type: "float", low: 0.6, high: 1.0}
+      reg_alpha: {type: "float", low: 0.001, high: 10.0, log: true}
+      reg_lambda: {type: "float", low: 0.001, high: 10.0, log: true}
+    lightgbm:
+      n_estimators: {type: "int", low: 100, high: 350, step: 50}
+      max_depth: {type: "int", low: 4, high: 10}
+      num_leaves: {type: "int", low: 15, high: 63}
+      learning_rate: {type: "float", low: 0.02, high: 0.2, log: true}
+      min_child_samples: {type: "int", low: 10, high: 40}
+      subsample: {type: "float", low: 0.6, high: 1.0}
+      colsample_bytree: {type: "float", low: 0.6, high: 1.0}
+      reg_alpha: {type: "float", low: 0.001, high: 10.0, log: true}
+      reg_lambda: {type: "float", low: 0.001, high: 10.0, log: true}

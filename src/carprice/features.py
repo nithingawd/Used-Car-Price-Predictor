@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, TargetEncoder
@@ -19,6 +20,35 @@ from carprice.data import validate_schema
 
 logger = logging.getLogger(__name__)
 
+BASE_NUMERIC_FEATURES: list[str] = [
+    "vehicle_age",
+    "km_driven",
+    "mileage",
+    "engine",
+    "max_power",
+    "seats",
+]
+# Engineered by DomainFeatureEngineer; the kept set from D-013.
+ENGINEERED_FEATURES: list[str] = [
+    "km_per_year",
+    "power_per_litre",
+    "is_luxury_brand",
+    "age_x_power",
+]
+NUMERIC_FEATURES: list[str] = BASE_NUMERIC_FEATURES + ENGINEERED_FEATURES
+CATEGORICAL_FEATURES: list[str] = ["brand", "fuel_type", "transmission_type", "seller_type"]
+HIGH_CARDINALITY_FEATURE = "model"
+
+# (column, description, mode) screened by evaluate_feature_candidates (D-010, D-013).
+CANDIDATE_FEATURES: list[tuple[str, str, str]] = [
+    ("km_per_year", "Odometer / vehicle_age ratio (wear intensity)", "add"),
+    ("power_per_litre", "max_power / (engine/1000) (engine tuning intensity)", "add"),
+    ("log_km_driven", "log1p(km_driven) instead of raw capped km", "replace"),
+    ("is_luxury_brand", "Binary indicator for luxury/ultra-luxury marques", "add"),
+    ("age_x_power", "Interaction between age and rated horsepower", "add"),
+    ("power_x_automatic", "max_power x automatic-transmission indicator", "add"),
+]
+
 
 def create_train_test_split(
     interim_path: Path | None = None,
@@ -26,7 +56,10 @@ def create_train_test_split(
     test_size: float | None = None,
     seed: int | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, list[int]]]:
-    """Partition cleaned dataset into 80/20 train/test split stratified on price quintiles.
+    """Partition cleaned dataset into a train/test split stratified on target quantile bins.
+
+    Stratification column and bin count come from ``config.splitting`` (D-012); the bins
+    are used only to balance the split and are not saved as a feature.
 
     Args:
         interim_path: Optional path to cars_clean.csv.
@@ -50,13 +83,15 @@ def create_train_test_split(
 
     # Compute target and stratification bins
     df["log_selling_price"] = np.log1p(df["selling_price"])
-    quintiles = pd.qcut(df["selling_price"], q=5, labels=False)
+    strata = pd.qcut(
+        df[config.splitting.stratify_by], q=config.splitting.stratify_bins, labels=False
+    )
 
     train_indices, test_indices = train_test_split(
         df.index.to_numpy(),
         test_size=fraction,
         random_state=split_seed,
-        stratify=quintiles,
+        stratify=strata,
     )
 
     train_df = df.loc[train_indices].copy().reset_index(drop=True)
@@ -88,12 +123,13 @@ def create_train_test_split(
 class RareCategoryEncoder(BaseEstimator, TransformerMixin):
     """Group infrequent categorical levels into 'Other' based on training frequencies."""
 
-    def __init__(self, columns: list[str] | None = None, min_frequency: int = 30) -> None:
+    def __init__(self, columns: list[str] | None = None, min_frequency: int | None = None) -> None:
         """Initialize transformer.
 
         Args:
             columns: List of columns to encode.
-            min_frequency: Minimum occurrences required to keep individual level.
+            min_frequency: Minimum occurrences required to keep individual level
+                (defaults to ``features.rare_category_min_frequency``).
         """
         self.columns = columns
         self.min_frequency = min_frequency
@@ -110,11 +146,12 @@ class RareCategoryEncoder(BaseEstimator, TransformerMixin):
             self: Fitted instance.
         """
         cols = self.columns or list(X.columns)
+        threshold = self.min_frequency or get_config().features.rare_category_min_frequency
         self.frequent_categories_ = {}
         for col in cols:
             if col in X.columns:
                 counts = X[col].astype(str).value_counts()
-                frequent = set(counts[counts >= self.min_frequency].index)
+                frequent = set(counts[counts >= threshold].index)
                 self.frequent_categories_[col] = frequent
         return self
 
@@ -217,15 +254,51 @@ class DomainFeatureEngineer(BaseEstimator, TransformerMixin):
             np.ndarray: Augmented column list.
         """
         base = list(input_features) if input_features is not None else []
-        derived = ["km_per_year", "power_per_litre", "is_luxury_brand", "age_x_power"]
-        return np.array(base + derived)
+        return np.array(base + ENGINEERED_FEATURES)
 
 
-def build_preprocessor(kind: str = "tree") -> ColumnTransformer:
+def make_cv_splitter() -> KFold:
+    """Return the project's shuffled K-fold splitter (folds and seed from config).
+
+    Returns:
+        KFold: Splitter with ``splitting.cv_folds`` folds and the global seed.
+    """
+    config = get_config()
+    return KFold(
+        n_splits=config.splitting.cv_folds, shuffle=True, random_state=config.project.random_seed
+    )
+
+
+def build_model_encoder(model_encoding: str = "target") -> Pipeline:
+    """Build the encoder for the high-cardinality ``model`` column (D-014).
+
+    Args:
+        model_encoding: 'target' (cross-fitted TargetEncoder, the production choice) or
+            'onehot' (the alternative used only for the encoder comparison).
+
+    Returns:
+        Pipeline: Single-step encoder pipeline.
+
+    Raises:
+        ValueError: If model_encoding is not 'target' or 'onehot'.
+    """
+    if model_encoding == "target":
+        return Pipeline([("target_enc", TargetEncoder(cv=make_cv_splitter(), smooth="auto"))])
+    if model_encoding == "onehot":
+        min_freq = get_config().feature_checks.model_onehot_min_frequency
+        encoder = OneHotEncoder(
+            handle_unknown="ignore", min_frequency=min_freq, sparse_output=False
+        )
+        return Pipeline([("onehot", encoder)])
+    raise ValueError(f"Invalid model_encoding: '{model_encoding}'. Expected 'target' or 'onehot'.")
+
+
+def build_preprocessor(kind: str = "tree", model_encoding: str = "target") -> ColumnTransformer:
     """Build scikit-learn ColumnTransformer configured for linear or tree model families.
 
     Args:
         kind: Model architecture type ('linear' or 'tree').
+        model_encoding: Encoder for the ``model`` column; see build_model_encoder().
 
     Returns:
         ColumnTransformer: Leak-free multi-feature preprocessor.
@@ -236,73 +309,38 @@ def build_preprocessor(kind: str = "tree") -> ColumnTransformer:
     if kind not in ["linear", "tree"]:
         raise ValueError(f"Invalid preprocessor kind: '{kind}'. Expected 'linear' or 'tree'.")
 
-    config = get_config()
-    seed = config.project.random_seed
-    cv = KFold(n_splits=5, shuffle=True, random_state=seed)
-
-    numeric_cols = [
-        "vehicle_age",
-        "km_driven",
-        "mileage",
-        "engine",
-        "max_power",
-        "seats",
-        "km_per_year",
-        "power_per_litre",
-        "is_luxury_brand",
-        "age_x_power",
-    ]
-
-    cat_cols = ["brand", "fuel_type", "transmission_type", "seller_type"]
-
-    # Numeric sub-pipeline
+    num_steps: list[tuple[str, Any]] = [("imputer", SimpleImputer(strategy="median"))]
     if kind == "linear":
-        num_pipeline = Pipeline(
-            [
-                ("imputer", SimpleImputer(strategy="median")),
-                ("scaler", StandardScaler()),
-            ]
-        )
-    else:
-        num_pipeline = Pipeline(
-            [
-                ("imputer", SimpleImputer(strategy="median")),
-            ]
-        )
+        num_steps.append(("scaler", StandardScaler()))
 
-    # Categorical sub-pipeline
+    min_freq = get_config().features.rare_category_min_frequency
     cat_pipeline = Pipeline(
         [
-            ("rare_encoder", RareCategoryEncoder(columns=cat_cols, min_frequency=20)),
+            (
+                "rare_encoder",
+                RareCategoryEncoder(columns=CATEGORICAL_FEATURES, min_frequency=min_freq),
+            ),
             ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
         ]
     )
 
-    # Model high-cardinality target encoder
-    model_pipeline = Pipeline(
-        [
-            ("target_enc", TargetEncoder(cv=cv, smooth="auto")),
-        ]
-    )
-
-    preprocessor = ColumnTransformer(
+    return ColumnTransformer(
         transformers=[
-            ("num", num_pipeline, numeric_cols),
-            ("cat", cat_pipeline, cat_cols),
-            ("model", model_pipeline, ["model"]),
+            ("num", Pipeline(num_steps), NUMERIC_FEATURES),
+            ("cat", cat_pipeline, CATEGORICAL_FEATURES),
+            ("model", build_model_encoder(model_encoding), [HIGH_CARDINALITY_FEATURE]),
         ],
         remainder="drop",
         verbose_feature_names_out=False,
     )
 
-    return preprocessor
 
-
-def build_feature_pipeline(kind: str = "tree") -> Pipeline:
+def build_feature_pipeline(kind: str = "tree", model_encoding: str = "target") -> Pipeline:
     """Construct complete end-to-end feature pipeline including domain engineering.
 
     Args:
         kind: 'linear' or 'tree'.
+        model_encoding: Encoder for the ``model`` column ('target' in production).
 
     Returns:
         Pipeline: End-to-end feature preparation pipeline.
@@ -310,138 +348,164 @@ def build_feature_pipeline(kind: str = "tree") -> Pipeline:
     return Pipeline(
         [
             ("engineer", DomainFeatureEngineer()),
-            ("preprocess", build_preprocessor(kind=kind)),
+            ("preprocess", build_preprocessor(kind=kind, model_encoding=model_encoding)),
         ]
     )
+
+
+def add_candidate_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Add every candidate feature (kept or not) so the Ridge probe can select among them.
+
+    Args:
+        df: Training DataFrame with the cleaned schema.
+
+    Returns:
+        pd.DataFrame: Copy with engineered features plus the rejected candidates.
+    """
+    out = DomainFeatureEngineer().transform(df)
+    out["log_km_driven"] = np.log1p(out["km_driven"])
+    is_automatic = (out["transmission_type"] == "Automatic").astype(float)
+    out["power_x_automatic"] = out["max_power"] * is_automatic
+    return out
+
+
+def build_ridge_probe(numeric_cols: list[str], model_encoding: str = "target") -> Pipeline:
+    """Build the scaled Ridge pipeline used to screen features and encoders (D-013, D-014).
+
+    Args:
+        numeric_cols: Numeric columns to include.
+        model_encoding: Encoder for the ``model`` column ('target' or 'onehot').
+
+    Returns:
+        Pipeline: Unfitted preprocessing + Ridge pipeline.
+    """
+    config = get_config()
+    numeric = Pipeline([("imp", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
+    categorical = OneHotEncoder(
+        handle_unknown="ignore",
+        min_frequency=config.features.rare_category_min_frequency,
+        sparse_output=False,
+    )
+    pre = ColumnTransformer(
+        [
+            ("num", numeric, numeric_cols),
+            ("cat", categorical, CATEGORICAL_FEATURES),
+            ("model", build_model_encoder(model_encoding), [HIGH_CARDINALITY_FEATURE]),
+        ]
+    )
+    return Pipeline([("pre", pre), ("reg", Ridge(alpha=config.feature_checks.probe_ridge_alpha))])
+
+
+def cv_log_rmse(pipe: Pipeline, X: pd.DataFrame, y: pd.Series) -> float:
+    """Return mean K-fold CV RMSE of a pipeline on the log1p price scale.
+
+    Args:
+        pipe: Unfitted pipeline.
+        X: Training features.
+        y: log1p(selling_price).
+
+    Returns:
+        float: Mean RMSE across the project's CV folds (unrounded).
+    """
+    scores = cross_val_score(
+        pipe, X, y, cv=make_cv_splitter(), scoring="neg_root_mean_squared_error"
+    )
+    return -float(scores.mean())
+
+
+def candidate_numeric_columns(name: str, mode: str) -> list[str]:
+    """Return the probe's numeric columns for one candidate.
+
+    Args:
+        name: Candidate column name.
+        mode: 'add' appends it to the base set; 'replace' swaps it in for km_driven.
+
+    Returns:
+        list[str]: Numeric column list for the probe.
+    """
+    if mode == "replace":
+        return [name if col == "km_driven" else col for col in BASE_NUMERIC_FEATURES]
+    return [*BASE_NUMERIC_FEATURES, name]
+
+
+def feature_check_record(
+    name: str, description: str, rmse: float, baseline_rmse: float
+) -> dict[str, Any]:
+    """Apply the keep rule (gain >= feature_checks.min_rmse_gain) to one measured candidate.
+
+    Args:
+        name: Candidate identifier.
+        description: Plain-language description.
+        rmse: Measured CV log RMSE with the candidate.
+        baseline_rmse: Measured CV log RMSE without it.
+
+    Returns:
+        dict[str, Any]: Row for feature_checks.csv.
+    """
+    min_gain = get_config().feature_checks.min_rmse_gain
+    delta = rmse - baseline_rmse
+    decision = "KEEP" if delta <= -min_gain else "REJECT"
+    verb = "lowers" if decision == "KEEP" else "does not lower"
+    return {
+        "candidate_feature": name,
+        "description": description,
+        "baseline_cv_rmse": round(baseline_rmse, 4),
+        "cv_rmse": round(rmse, 4),
+        "delta_vs_baseline": round(delta, 4),
+        "decision": decision,
+        "rationale": f"Measured: {verb} Ridge CV log RMSE by at least {min_gain}",
+    }
 
 
 def evaluate_feature_candidates(
     train_df: pd.DataFrame,
     tables_dir: Path | None = None,
 ) -> pd.DataFrame:
-    """Evaluate candidate features on training fold CV and persist feature_checks.csv.
+    """Measure each candidate feature with the Ridge probe on train-only CV and save the table.
+
+    Every number in feature_checks.csv is computed here; nothing is typed in by hand.
 
     Args:
-        train_df: Training partition DataFrame.
+        train_df: Training partition DataFrame (never the test set).
         tables_dir: Optional destination path for summary table.
 
     Returns:
-        pd.DataFrame: Table of candidate feature evaluations and keep/reject decisions.
+        pd.DataFrame: One row per candidate plus a 'combined_kept' row.
     """
-    from sklearn.linear_model import Ridge
-
-    config = get_config()
-    out_dir = tables_dir or config.paths.tables_dir
-    seed = config.project.random_seed
-    cv = KFold(n_splits=5, shuffle=True, random_state=seed)
-
+    out_dir = tables_dir or get_config().paths.tables_dir
+    X = add_candidate_columns(train_df)
     y = np.log1p(train_df["selling_price"])
 
-    # Baseline performance without engineered features
-    base_num = ["vehicle_age", "km_driven", "mileage", "engine", "max_power", "seats"]
-    base_cat = ["brand", "fuel_type", "transmission_type", "seller_type"]
+    base_rmse = cv_log_rmse(build_ridge_probe(BASE_NUMERIC_FEATURES), X, y)
+    logger.info("Baseline Ridge CV log RMSE: %.4f", base_rmse)
+    records = []
+    for name, description, mode in CANDIDATE_FEATURES:
+        rmse = cv_log_rmse(build_ridge_probe(candidate_numeric_columns(name, mode)), X, y)
+        records.append(feature_check_record(name, description, rmse, base_rmse))
 
-    base_pipe = Pipeline(
-        [
-            (
-                "pre",
-                ColumnTransformer(
-                    [
-                        (
-                            "num",
-                            Pipeline(
-                                [
-                                    ("imp", SimpleImputer(strategy="median")),
-                                    ("scale", StandardScaler()),
-                                ]
-                            ),
-                            base_num,
-                        ),
-                        (
-                            "cat",
-                            OneHotEncoder(
-                                handle_unknown="ignore", min_frequency=20, sparse_output=False
-                            ),
-                            base_cat,
-                        ),
-                        ("model", TargetEncoder(cv=cv, smooth="auto"), ["model"]),
-                    ]
-                ),
-            ),
-            ("reg", Ridge(alpha=1.0)),
-        ]
+    kept = [r["candidate_feature"] for r in records if r["decision"] == "KEEP"]
+    if kept != ENGINEERED_FEATURES:
+        logger.warning(
+            "Kept features %s differ from pipeline features %s", kept, ENGINEERED_FEATURES
+        )
+    combined = cv_log_rmse(build_ridge_probe(NUMERIC_FEATURES), X, y)
+    records.append(
+        feature_check_record("combined_kept", "All pipeline features together", combined, base_rmse)
     )
-
-    base_rmse = -float(
-        cross_val_score(base_pipe, train_df, y, cv=cv, scoring="neg_root_mean_squared_error").mean()
-    )
-    logger.info("Baseline Ridge 5-fold CV RMSE: %.4f", base_rmse)
-
-    checks = [
-        (
-            "km_per_year",
-            "Odometer / vehicle_age ratio (wear intensity)",
-            0.2018,
-            -0.0002,
-            "KEEP",
-            "Improves linear CV and captures commercial usage wear",
-        ),
-        (
-            "power_per_litre",
-            "max_power / (engine/1000) (engine tuning intensity)",
-            0.2016,
-            -0.0005,
-            "KEEP",
-            "Captures turbocharging efficiency and powertrain sophistication",
-        ),
-        (
-            "log_km_driven",
-            "log1p(km_driven) instead of raw capped km",
-            0.2025,
-            0.0004,
-            "REJECT",
-            "Slightly degrades linear score; raw capped km already limits leverage",
-        ),
-        (
-            "is_luxury_brand",
-            "Binary indicator for luxury/ultra-luxury marques",
-            0.2014,
-            -0.0006,
-            "KEEP",
-            "Statistically separates high-equity European marques from commuter brands",
-        ),
-        (
-            "age_x_power",
-            "Interaction between age and rated horsepower",
-            0.1925,
-            -0.0095,
-            "KEEP",
-            "Significantly improves linear baseline (-0.0095 RMSE) by modeling power depreciation",
-        ),
-        (
-            "model_target_encoding",
-            "TargetEncoder vs OneHotEncoder for 120 models",
-            0.3732,
-            -0.0053,
-            "KEEP",
-            "TargetEncoder beats OneHotEncoder (0.3732 vs 0.3785) with single dense column",
-        ),
-    ]
-
-    records = [
-        {
-            "candidate_feature": name,
-            "description": desc,
-            "cv_rmse": rmse,
-            "delta_vs_baseline": delta,
-            "decision": decision,
-            "rationale": rationale,
-        }
-        for name, desc, rmse, delta, decision, rationale in checks
-    ]
 
     checks_df = pd.DataFrame(records)
     out_dir.mkdir(parents=True, exist_ok=True)
     checks_df.to_csv(out_dir / "feature_checks.csv", index=False)
     logger.info("Saved feature checks table to %s", out_dir / "feature_checks.csv")
     return checks_df
+
+
+def main() -> None:
+    """Reproduce Phase 3: write the train/test split, then the feature-check table."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    train_df, _, _ = create_train_test_split()
+    evaluate_feature_candidates(train_df)
+
+
+if __name__ == "__main__":
+    main()

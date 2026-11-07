@@ -888,7 +888,8 @@ def run_eda_pipeline() -> None:
 
     # 7. Quality & Segments
     brand_counts = df["brand"].value_counts()
-    brand_counts[brand_counts < 30].reset_index().rename(
+    rare_cutoff = get_config().eda.rare_brand_report_threshold
+    brand_counts[brand_counts < rare_cutoff].reset_index().rename(
         columns={"index": "brand", "count": "row_count"}
     ).to_csv(tbl_dir / "eda_rare_brands.csv", index=False)
 

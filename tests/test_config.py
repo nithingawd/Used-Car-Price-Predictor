@@ -38,3 +38,23 @@ def test_get_config_is_cached() -> None:
     cfg1 = get_config()
     cfg2 = get_config()
     assert cfg1 is cfg2
+
+
+def test_split_and_encoder_settings_come_from_config() -> None:
+    """Split stratification and rare-category threshold are explicit config values."""
+    config = get_config()
+    assert config.splitting.stratify_by == "selling_price"
+    assert config.splitting.stratify_bins == 5
+    assert config.features.rare_category_min_frequency == 20
+    assert config.eda.rare_brand_report_threshold == 30
+
+
+def test_every_tuned_model_has_a_search_space() -> None:
+    """Each search space belongs to a configured candidate and defines bounded parameters."""
+    models = get_config().models
+    assert set(models.search_spaces) <= set(models.candidates)
+    for space in models.search_spaces.values():
+        for spec in space.values():
+            assert spec["type"] in {"int", "float"}
+            assert spec["low"] < spec["high"]
+    assert set(models.candidate_params) == set(models.candidates)

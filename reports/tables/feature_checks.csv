@@ -1,7 +1,8 @@
-candidate_feature,description,cv_rmse,delta_vs_baseline,decision,rationale
-km_per_year,Odometer / vehicle_age ratio (wear intensity),0.2018,-0.0002,KEEP,Improves linear CV and captures commercial usage wear
-power_per_litre,max_power / (engine/1000) (engine tuning intensity),0.2016,-0.0005,KEEP,Captures turbocharging efficiency and powertrain sophistication
-log_km_driven,log1p(km_driven) instead of raw capped km,0.2025,0.0004,REJECT,Slightly degrades linear score; raw capped km already limits leverage
-is_luxury_brand,Binary indicator for luxury/ultra-luxury marques,0.2014,-0.0006,KEEP,Statistically separates high-equity European marques from commuter brands
-age_x_power,Interaction between age and rated horsepower,0.1925,-0.0095,KEEP,Significantly improves linear baseline (-0.0095 RMSE) by modeling power depreciation
-model_target_encoding,TargetEncoder vs OneHotEncoder for 120 models,0.3732,-0.0053,KEEP,TargetEncoder beats OneHotEncoder (0.3732 vs 0.3785) with single dense column
+candidate_feature,description,baseline_cv_rmse,cv_rmse,delta_vs_baseline,decision,rationale
+km_per_year,Odometer / vehicle_age ratio (wear intensity),0.202,0.2018,-0.0002,KEEP,Measured: lowers Ridge CV log RMSE by at least 0.0001
+power_per_litre,max_power / (engine/1000) (engine tuning intensity),0.202,0.2016,-0.0005,KEEP,Measured: lowers Ridge CV log RMSE by at least 0.0001
+log_km_driven,log1p(km_driven) instead of raw capped km,0.202,0.2025,0.0004,REJECT,Measured: does not lower Ridge CV log RMSE by at least 0.0001
+is_luxury_brand,Binary indicator for luxury/ultra-luxury marques,0.202,0.2009,-0.0011,KEEP,Measured: lowers Ridge CV log RMSE by at least 0.0001
+age_x_power,Interaction between age and rated horsepower,0.202,0.1925,-0.0095,KEEP,Measured: lowers Ridge CV log RMSE by at least 0.0001
+power_x_automatic,max_power x automatic-transmission indicator,0.202,0.2021,0.0,REJECT,Measured: does not lower Ridge CV log RMSE by at least 0.0001
+combined_kept,All pipeline features together,0.202,0.1903,-0.0117,KEEP,Measured: lowers Ridge CV log RMSE by at least 0.0001
