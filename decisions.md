@@ -223,15 +223,23 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ### D-014: High-Cardinality Model Feature Encoding (Cross-Validated TargetEncoder)
 
-- **Date / Phase:** 2026-11-07 / Phase 3
-- **Context:** The `model` feature contains ~120 unique categorical levels, posing a risk of dimensionality explosion and sparse splits if one-hot encoded.
+- **Date / Phase:** 2026-11-07 / Phase 3 (evidence corrected 2026-11-08, see D-021)
+- **Context:** The `model` feature contains ~120 unique levels, posing a risk of dimensionality explosion and sparse splits if one-hot encoded.
 - **Options considered:**
-  - (a) One-Hot Encoding with minimum frequency grouping (`min_frequency=10`).
+  - (a) One-hot encoding with minimum-frequency grouping (`feature_checks.model_onehot_min_frequency: 10`).
   - (b) Scikit-learn's `TargetEncoder` with internal 5-fold cross-fitting (`smooth="auto"`).
-- **Decision:** Adopt option (b) `TargetEncoder`.
-- **Reason:** 5-fold cross-validation on `train.csv` demonstrated that TargetEncoder achieved superior predictive accuracy (Ridge CV RMSE: 0.3732) compared to One-Hot Encoding (RMSE: 0.3785) while compressing 120 sparse dummy columns into a single informative continuous feature. Target encoding is fit strictly within training folds, preventing target leakage.
-- **Evidence:** `reports/tables/feature_checks.csv`, `tests/test_features.py`.
-- **Impact / how to reverse:** Configured in `build_preprocessor()` inside `src/carprice/features.py`.
+- **Measured (5-fold CV log RMSE on `train.csv`, `reports/tables/encoder_comparison.csv`):**
+
+  | Model family | TargetEncoder | One-hot |
+  |---|---|---|
+  | Ridge probe (base features) | 0.2020 | **0.1895** |
+  | Tuned XGBoost (final pipeline) | **0.1654** | 0.1673 |
+
+- **Decision:** Adopt option (b) `TargetEncoder` in the production pipeline.
+- **Reason:** The deployed model is the tuned XGBoost, and for it TargetEncoder is better (0.1654 vs 0.1673) while compressing ~120 sparse columns into one dense feature. The encoder is cross-fitted inside each training fold, so it does not leak the target. For a linear model the result reverses: one-hot is clearly better, because one coefficient per car model gives Ridge more flexibility than a single encoded column.
+- **Correction:** the original entry cited "0.3732 vs 0.3785" in favour of TargetEncoder for Ridge. Those figures were typed into the code, not measured, and the measured Ridge result points the other way. The decision stands because it rests on the XGBoost result, not the Ridge one.
+- **Evidence:** `reports/tables/encoder_comparison.csv` (from `run_encoder_comparison()` in `src/carprice/train.py`), `tests/test_features.py::test_default_pipeline_uses_target_encoding_for_model`.
+- **Impact / how to reverse:** `build_feature_pipeline(model_encoding="onehot")`; see Open question 1 about the Ridge baseline.
 
 ---
 
@@ -309,10 +317,11 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Date / Phase:** 2026-11-08 / Phase 4
 - **Context:** Identifying the winning production model from tuned candidates strictly using training-set CV metrics before touching the locked test set.
 - **Decision Rule:** Select the candidate achieving lowest mean 5-fold CV log RMSE; tie-breaker: smaller fold standard deviation, lower model complexity, and faster inference latency.
-- **Outcome:** Tuned `xgboost` achieved the lowest 5-fold CV log RMSE of **0.1654** (OOF $R^2 = 0.9426$), edging out `lightgbm` (0.1660) and `hist_gradient_boosting` (0.1660).
+- **Outcome:** Tuned `xgboost` achieved the lowest 5-fold CV log RMSE of **0.1654** (OOF $R^2 = 0.9426$), edging out `lightgbm` (0.1660) and `hist_gradient_boosting` (0.1660) (`models/best_params.json`). The margin (0.0006) is well inside one fold standard deviation (about 0.005 in `cv_results.csv`), so the three boosters are effectively tied.
 - **Superiority over baselines:**
-  - 76.10% lower RMSE than DummyRegressor (0.6921 $\rightarrow$ 0.1654).
-  - 13.08% lower RMSE than Ridge linear baseline (0.1903 $\rightarrow$ 0.1654), with out-of-fold INR MAE improving from ₹1,20,518 to ₹97,642.
+  - 76.1% lower RMSE than DummyRegressor (0.6921 $\rightarrow$ 0.1654), `model_card.json` → `improvement_vs_dummy_pct`.
+  - 13.06% lower RMSE than the Ridge linear baseline (0.1903 $\rightarrow$ 0.1654), `model_card.json` → `improvement_vs_ridge_pct`. (An earlier version said 13.08%, computed from rounded figures; the card uses the unrounded OOF RMSE.)
+  - Untuned out-of-fold INR MAE: Ridge ₹1,20,518 vs untuned XGBoost ₹97,642 (`cv_results.csv`).
 - **Evidence:** `reports/tables/cv_results.csv`, `models/best_params.json`, `models/model_card.json`.
 - **Impact / how to reverse:** Governed by `fit_and_persist_pipelines()` in `src/carprice/train.py`.
 
@@ -329,6 +338,25 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Reason:** Residuals on used car valuations exhibit slight asymmetry due to seller negotiation bands. Empirical out-of-fold quantiles make zero normality assumptions and directly reflect real-world validation coverage.
 - **Evidence:** `models/model_card.json`.
 - **Impact / how to reverse:** Documented in model card and consumed by `predict.py` and GUI in Phases 5 & 6.
+
+---
+
+### D-021: Phase 4 Consistency Review and Corrections
+
+- **Date / Phase:** 2026-11-08 / Phase 4 review
+- **Context:** A review of Phases 0 to 4 against AGENTS.md found places where the decision log, config and code disagreed.
+- **Problems found and fixes:**
+  1. *Typed-in evidence.* `evaluate_feature_candidates()` measured only the baseline; every candidate row of `feature_checks.csv` was a typed-in number, against the A4 rule "do not invent numbers". **Fix:** the function now measures every row. Four of the six original numbers were reproduced exactly; `is_luxury_brand` (true Δ −0.0011, was −0.0006) and the combined set (0.1903, was 0.1910) were wrong, and the encoder figures were not measurements at all (D-013, D-014 corrected).
+  2. *Untested proposal.* `power_x_automatic` (D-010) was never evaluated. **Fix:** now measured and rejected (D-013).
+  3. *Config that disagreed with the code.* `splitting.stratify_by` was `null` while the code stratified on price quintiles; `rare_brand_threshold: 30` and `rare_fuel_threshold: 40` were unused while the code hard-coded 20 and 40; `min_price`, `max_price`, `min_year`, `max_year` were unused (the data has no year column, and the real maximum price, ₹3.95 crore, exceeded `max_price`). **Fix:** every threshold the code uses is now read from config with the same value; unused keys were removed.
+  4. *Hard-coded model grids.* Candidate hyperparameters and Optuna search spaces were literals in `train.py` (A2 requires them in config), with three copy-pasted tuning functions. **Fix:** moved to `models.candidate_params` and `models.search_spaces`; one `tune_model_study()` replaces the three copies.
+  5. *Wrong figure.* `tuning_param_importances.png` showed LightGBM's study although XGBoost won. **Fix:** the figure now follows the winning study. The tuning figures and the CV comparison now have titles that state the finding (A7).
+  6. *Provenance.* `model_card.json` recorded the Phase 3 commit because training ran before Phase 4 was committed. **Fix:** the hash gets a `-dirty` suffix when `src/` or `configs/` have uncommitted changes, and the model was refitted from a clean commit.
+  7. *Fuel-label check.* The LPG exemption in `fix_fuel_labels()` compared against `"LPG"`, but labels are title-cased to `"Lpg"`, so it never matched (harmless: LPG has 44 rows, above the 40 threshold). **Fix:** exemption removed.
+  8. *Reproduction.* `python tasks.py train` was a placeholder, and Phases 2 and 3 had no command. **Fix:** `tasks.py eda`, `split` and `train` now run the real pipelines; the README lists them in order.
+- **Verification ("without affecting previous work"):** after the changes, Phases 1, 3 and 4 were re-run from scratch and compared with copies taken beforehand. `cars_clean.csv`, all audit tables, `cleaning_log.csv`, `train.csv`, `test.csv` and `split_indices.json` are byte-identical. `best_params.json`, all scores in `cv_results.csv`, every Optuna trial's parameters and value, and every metric in `model_card.json` are identical; only timings and timestamps differ. The refitted `final_pipeline.joblib` gives the same predictions as the pre-review pipeline on all 12,195 training rows.
+- **Evidence:** commit history, `reports/tables/feature_checks.csv`, `reports/tables/encoder_comparison.csv`, new tests in `tests/test_config.py`, `tests/test_features.py`, `tests/test_train.py`.
+- **Impact / how to reverse:** `git revert` the review commits; no model or data changes are involved.
 
 ---
 

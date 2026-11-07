@@ -1,8 +1,8 @@
 {
   "model_name": "xgboost (Tuned)",
   "model_architecture": "TransformedTargetRegressor(Pipeline[DomainFeatureEngineer, ColumnTransformer, xgboost])",
-  "timestamp_utc": "2026-11-07T19:07:06.697483+00:00",
-  "git_commit": "fa708a9-dirty",
+  "timestamp_utc": "2026-11-07T19:15:36.243034+00:00",
+  "git_commit": "6e2e4c7",
   "training_sample_count": 12195,
   "target_transform": "log1p(selling_price) -> expm1",
   "best_hyperparameters": {
