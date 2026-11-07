@@ -522,6 +522,63 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-032: GUI Page Structure and Architecture
+
+- **Date / Phase:** 2026-11-08 / Phase 7
+- **Pages (in navigation order):** Price estimator (default, `app/Home.py`, with *Single car* and *Batch estimate* tabs), Market explorer, Model performance, About and data (`app/pages/`).
+- **Why this order:** the task a non-technical visitor came for (pricing a car) comes first and needs no scrolling. The market context follows for people comparing options, then the evidence for people who want to trust the number, then background.
+- **Navigation:** `st.navigation(position="top")` gives a top navigation bar instead of the default sidebar. It reads like a product, leaves the full width for the 40/60 form-and-result layout, and stacks cleanly on narrow screens. `Home.py` is the entry point and router; the estimator is defined in it as the default page.
+- **Code layout:** no modelling logic in the GUI. Pages call `PricePredictor` and shared helpers only:
+  - `src/carprice/insights.py`: explanations, what-if, spec lookup, similar listings.
+  - `src/carprice/market.py`: new; filtering and summaries for Market explorer and the compare panel, all tested.
+  - `src/carprice/palette.py`: new; the single source of A7 hex values for both matplotlib and the GUI.
+  - `app/components/`: `palette.py` (the only GUI colour source, plus the Plotly style), `ui.py` (`load_theme`, `page_header`, `section_header`, `metric_card`, `info_note`, `empty_state`, `chart_card`, `range_bar`, `format_inr`, `format_lakh`, `safely`), `charts.py` (all Plotly figures), `data.py` (cached loaders), `batch.py` (upload checks, testable without Streamlit) and `theme.css`.
+- **Caching:** `st.cache_resource` holds the `PricePredictor`, loaded once per server process and never on interaction. `st.cache_data` holds the spec lookup, training listings, cleaned listings, report tables, the model card and library versions.
+- **Pre-fill:** `models/model_specs.csv` (D-031) gives each brand/model's most common engine, power, mileage, seats, fuel and transmission. Changing the brand selects its most common model, and changing the model pre-fills those fields through `on_change` callbacks. Every field stays editable.
+- **When predictions run:** on first visit the most common car in the training data is priced once, so the page is never blank. After that, prices only update when **Estimate price** is pressed. If the form changes afterwards, an "Inputs changed" pill marks the result as stale instead of silently re-pricing. The what-if panel is an `st.fragment`, so switching between Age and Kilometres redraws only that panel.
+- **Layout:** the form is in the left 40%. The result card and the "why this price" and "compare" panels share the right 60%; the what-if chart spans the full width below. This balances the column heights (no ragged columns), while still placing "three small panels below the result".
+- **Data sources:** Market explorer uses `data/interim/cars_clean.csv` only, as the brief says. The "similar listings" message and the compare panel use `train.csv`, the data the model learned from. The Model performance and About pages read only `reports/tables/`, `models/model_card.json` and library metadata. No metric is typed into the code; Market explorer figures are computed live from the filtered data by `market.py`.
+- **Evidence:** `app/`, `tests/test_app_helpers.py` (AppTest smoke tests for all four pages, brand filtering, pre-fill and the estimate button).
+
+---
+
+### D-033: SHAP in the App and Response Time
+
+- **Date / Phase:** 2026-11-08 / Phase 7
+- **Method:** "Why this price" shows the top five factors for the single car, from XGBoost's native `pred_contribs`. This is exact TreeSHAP; it equals the shap library to 0.0 and its contributions add up to the log prediction (D-031, `tests/test_insights.py`). One-hot columns are summed back to their input. Effects are shown as % change against an average car (`expm1(contribution)`), teal for raising the price and slate for lowering it. Values are written into the bar labels so nothing clips on narrow panels.
+- **Why not the shap library:** importing shap would add seconds to server start, and TreeExplainer adds nothing over the native call for one row.
+- **Latency:** the app shows the measured time under every estimate. Validation, prediction, explanation, similar listings and the peer comparison took 0.12 to 0.49 s in AppTest and in the browser, on the throttled laptop described in D-031. `tests/test_app_helpers.py::test_estimate_with_explanation_under_two_seconds` enforces the 2-second budget (`gui.max_response_seconds`). The what-if curve (21 predictions in one batch call) renders in its own fragment.
+- **Evidence:** `app/Home.py` (`run_estimate`, `why_panel`), `src/carprice/insights.py`.
+
+---
+
+### D-034: Treatment of Rare and Luxury Cars in the UI
+
+- **Date / Phase:** 2026-11-08 / Phase 7
+- **Rules:**
+  1. *Cannot pick an unknown car:* brand and model are dropdowns from the training data (D-030), so users cannot enter a brand or model the model has never seen. Numeric inputs are bounded by the training range (D-029).
+  2. *Lower-confidence notice:* when `PredictionResult.cautions` is non-empty (age ≥ 9 years, a luxury brand or an estimate above ₹20 lakh, a model or fuel with fewer than 50 training rows), the result card shows a "Lower confidence" note with a red left edge and one plain sentence per reason, beside the estimate. The estimate is still shown: it remains the best available guess, and the 80% range already widens in rupees for expensive cars.
+  3. *Similar listings:* for rare models with fewer than 10 comparable listings, the message falls back to the brand ("Similar 6-year-old Bmw cars…") or says plainly that there are too few listings to quote a market range.
+  4. *Model performance page:* the weakest segment is the page's single amber highlight, and the caption names old, luxury and the cheapest cars as weaker.
+- **Why:** D-026 showed these groups are where the model is least reliable. Warning beside the number, in words, follows A7's rule never to rely on colour alone and avoids silently over-trusting the estimate.
+
+---
+
+### D-035: Design System Implementation and Deviations from A7 and the Guideline
+
+- **Date / Phase:** 2026-11-08 / Phase 7
+- **Typography:** Fraunces for headings, Inter for the UI and JetBrains Mono for numbers, loaded through Streamlit's native theme options (`font`, `headingFont`, `codeFont` with Google Fonts URLs) and the `@import` in `theme.css`. **Deviation from the guideline's `config.toml`:** it lists `font = "sans serif"`; that line is replaced by the A7 fonts, because A7 requires Inter, Fraunces and JetBrains Mono, and the colour values are kept exactly. **Three type sizes:** 44 px (the estimate only, so it is always the largest element), 28 px (page title and metric values) and 14 px (everything else, including chart text); hierarchy comes from weight and colour.
+- **Colour discipline:** only A7 colours, from `carprice/palette.py` and `theme.css`. The guideline config also sets `redColor`, `greenColor`, `borderColor` and the chart palettes to A7 values, so no default Streamlit red or blue appears, and the default red-orange decoration bar is hidden. **One amber highlight per view:** the estimate marker (estimator), the top brand (market explorer) and the weakest segment (model performance). **Contrast:** muted grey #6B7280 measures 4.44:1 on the warm background #F7F5F0, just under 4.5:1, so muted text is used only inside white cards (4.83:1); text on the page background is ink. Amber is never used for text (2.05:1). The red A7 "negative" colour marks only errors and low-confidence warnings.
+- **Spacing and surfaces:** the 4 px scale (4/8/12/16/24/32/48) as CSS variables; cards are white with a 1 px #E3DED3 border, 12 px radius, 24 px padding and no shadows. Widgets use an 8 px radius.
+- **Motion (the student asked for clean, smooth animations):** cards and the estimate rise 6 px and fade in (320 to 420 ms, ease-out); charts and tables fade in; buttons lift 1 px on hover; inputs get a soft teal focus ring; the tab underline slides. All motion is disabled under `prefers-reduced-motion`. Because Streamlit only re-mounts changed elements, animations play when content changes (a new estimate), not on every keystroke.
+- **Robustness:** `client.showErrorDetails = "none"`, so no traceback ever reaches the browser. Every page body runs inside `safely()`, which turns a missing file or bad data into a plain-language error note. Each page has an empty state (no estimate yet, no upload yet, filters match nothing), a loading state (spinners and cached-loader messages) and an error state.
+- **Responsive:** below 960 px wide, all column rows stack (CSS on `stHorizontalBlock`), so the 800 px screenshots show a single readable column with nothing cut off.
+- **Controls:** fuel and transmission use horizontal radio buttons rather than segmented controls, because a segmented control can be de-selected to "nothing", which would produce a needless "missing" error.
+- **Known deviation:** the SHAP summary on Model performance is the Phase 5 static PNG, whose internal labels use matplotlib's fonts, sizes and raw feature names. It is the evaluated report figure, so it is shown as is, under a sentence-case heading with a readable plain-language paragraph beside it.
+- **Screenshots:** `scripts/capture_screenshots.py` (new folder `scripts/`) drives headless Chrome over the DevTools protocol, using the `websockets` package already installed with Streamlit. It waits until every Plotly chart has drawn and the page is stable, then saves `reports/figures/gui_<page>_<desktop|narrow>.png` at 1440 and 800 px. Chrome's own `--screenshot` flag captured only Streamlit's loading skeleton. When the script closes Chrome, Windows asyncio may log a `ConnectionResetError` to the *server* console. That noise comes from the tool, not the app, and the script now leaves the page before closing.
+
+---
+
 ## Open questions for the student
 
-1. **Predictor timing under a throttled CPU (D-031).** The single-prediction target (100 ms) passed unthrottled (30 ms median) but fails on battery in Silent mode (133 ms). Please re-run `python tasks.py predict` on mains power so the timing table reflects normal conditions.
+1. **Predictor timing under a throttled CPU (D-031).** On battery in the Windows Silent power plan the measurement varies widely. The latest run's fastest process passed (load 0.474 s, single-prediction median 27.2 ms) but its slowest failed (2.107 s, 154.5 ms). Please re-run `python tasks.py predict` on mains power so `predictor_timing.csv` reflects normal conditions.

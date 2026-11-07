@@ -143,6 +143,21 @@ every score and parameter does not.
 ### 5. Launch the Web Application
 
 ```bash
-python tasks.py app
+streamlit run app/Home.py          # or: python tasks.py app
 ```
 
+Four pages, from the top navigation bar:
+
+- **Price estimator:** pick a brand and model (specs pre-fill), adjust age, km and engine
+  figures, press *Estimate price*. You get the estimate in ₹ and lakh, the 80% range, a
+  similar-listings message, cautions for weak segments, the top five reasons (TreeSHAP), a
+  comparison with similar cars and a what-if chart. The *Batch estimate* tab prices a whole
+  CSV (download the template first).
+- **Market explorer:** filter all cleaned listings and read four charts.
+- **Model performance:** held-out test metrics, interactive accuracy charts, segment accuracy
+  and the main price drivers, all read from `reports/tables/`.
+- **About and data:** dataset, cleaning steps, how the model works, limitations, model card.
+
+The app needs the outputs of `python tasks.py train`, `evaluate` and `predict`. To refresh the
+screenshots in `reports/figures/gui_*.png`, start the app on port 8765 and run
+`python scripts/capture_screenshots.py` (needs Chrome or Edge).
