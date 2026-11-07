@@ -1,4 +1,4 @@
-.PHONY: setup clean clean-data eda split train evaluate app test lint
+.PHONY: setup clean clean-data eda split train evaluate predict app test lint
 
 PYTHON := $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,$(if $(wildcard .venv/bin/python),.venv/bin/python,python))
 
@@ -22,6 +22,9 @@ train:
 
 evaluate:
 	$(PYTHON) tasks.py evaluate
+
+predict:
+	$(PYTHON) tasks.py predict
 
 app:
 	$(PYTHON) tasks.py app

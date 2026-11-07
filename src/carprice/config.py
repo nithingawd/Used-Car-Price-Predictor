@@ -125,6 +125,8 @@ class PredictionSettings:
     max_load_seconds: float
     max_single_prediction_ms: float
     timing_repeats: int
+    timing_warmup: int
+    timing_runs: int
     whatif_ages: list[int]
     whatif_km: list[int]
     whatif_chart_km_lines: list[int]

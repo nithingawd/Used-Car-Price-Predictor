@@ -100,7 +100,7 @@ python tasks.py test
 python tasks.py lint
 ```
 
-### 4. Reproduce the Pipeline (Phases 1 to 5)
+### 4. Reproduce the Pipeline (Phases 1 to 6)
 
 Run these in order from the project root. Every step reads its settings from
 `configs/config.yaml` and uses the global seed, so re-running gives the same numbers.
@@ -122,6 +122,17 @@ python tasks.py train
 # Phase 5: score the locked test set once, segments, bootstrap, permutation + SHAP
 #          (narrative: notebooks/03_model_evaluation.ipynb, summary: reports/evaluation_summary.md)
 python tasks.py evaluate
+
+# Phase 6: input schema, model spec lookup, test predictions, worked examples, what-if
+#          (reports/predictions/, reports/figures/whatif_age_km.png)
+python tasks.py predict
+```
+
+Predict one car from the command line (invalid input prints plain-language problems):
+
+```bash
+python -m carprice.predict one --brand Hyundai --model I20 --vehicle-age 4 --km-driven 45000   --seller-type Dealer --fuel-type Petrol --transmission-type Manual --mileage 18.6   --engine 1197 --max-power 82 --seats 5
+python -m carprice.predict batch --csv cars.csv --out priced.csv
 ```
 
 The saved `.joblib` pipelines are not committed to git, so a fresh clone must run

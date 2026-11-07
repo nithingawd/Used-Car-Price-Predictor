@@ -138,6 +138,10 @@ prediction:
   max_load_seconds: 2.0
   max_single_prediction_ms: 100
   timing_repeats: 50
+  # Steady-state timing: the app keeps one predictor alive, so the first calls are excluded.
+  timing_warmup: 10
+  # Fresh processes timed; pass/fail uses the fastest (system noise only slows a run).
+  timing_runs: 5
   # What-if sweep (task 6.7); the reference car is the most common model in train.csv.
   whatif_ages: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   whatif_km: [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000, 130000, 140000, 150000]

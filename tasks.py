@@ -147,6 +147,11 @@ def evaluate() -> int:
     return run_module("carprice.evaluate", "--stage", "all")
 
 
+def predict() -> int:
+    """Phase 6: input schema, spec lookup, test predictions, worked examples, what-if, timing."""
+    return run_module("carprice.prediction_reports")
+
+
 def app() -> int:
     """Launch Streamlit web application."""
     py = str(PYTHON_EXE if PYTHON_EXE.exists() else sys.executable)
@@ -166,6 +171,7 @@ def main() -> None:
             "split",
             "train",
             "evaluate",
+            "predict",
             "app",
             "test",
             "lint",
@@ -182,6 +188,7 @@ def main() -> None:
         "split": split,
         "train": train,
         "evaluate": evaluate,
+        "predict": predict,
         "app": app,
         "test": test,
         "lint": lint,
