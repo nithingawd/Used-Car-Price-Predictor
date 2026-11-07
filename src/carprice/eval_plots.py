@@ -303,6 +303,7 @@ def plot_shap_summary(
         show=False,
         cmap=SHAP_VALUE_CMAP,
         plot_size=(9, 7),
+        rng=np.random.default_rng(get_config().project.random_seed),
     )
     fig = plt.gcf()
     fig.axes[0].set_xlabel("SHAP value (effect on log predicted price)")
