@@ -21,7 +21,7 @@ from sklearn.metrics import make_scorer
 
 from carprice.config import get_config
 from carprice.data import validate_schema
-from carprice.features import CATEGORICAL_FEATURES
+from carprice.insights import explanation_frame, group_shap_by_feature
 from carprice.predict import prediction_interval
 from carprice.train import load_training_data
 
@@ -612,13 +612,6 @@ def compute_permutation_importance(
     return table.sort_values("rmse_log_increase", ascending=False).reset_index(drop=True)
 
 
-def explanation_frame(final_model: TransformedTargetRegressor, X: pd.DataFrame) -> pd.DataFrame:
-    """Rows as the estimator sees them: engineered, encoded, with output column names."""
-    features = final_model.regressor_.named_steps["features"]
-    names = features.named_steps["preprocess"].get_feature_names_out()
-    return pd.DataFrame(features.transform(X), columns=names, index=X.index)
-
-
 def compute_shap_values(
     final_model: TransformedTargetRegressor, X_sample: pd.DataFrame
 ) -> tuple[np.ndarray, pd.DataFrame]:
@@ -628,21 +621,6 @@ def compute_shap_values(
     transformed = explanation_frame(final_model, X_sample)
     explainer = shap.TreeExplainer(final_model.regressor_.named_steps["model"])
     return np.asarray(explainer.shap_values(transformed)), transformed
-
-
-def original_feature_of(column: str) -> str:
-    """Map a one-hot output column such as 'brand_Bmw' back to its input feature."""
-    for categorical in CATEGORICAL_FEATURES:
-        if column.startswith(f"{categorical}_"):
-            return categorical
-    return column
-
-
-def group_shap_by_feature(shap_values: np.ndarray, columns: list[str]) -> pd.DataFrame:
-    """Sum SHAP values of one-hot columns so each input feature has one value per row."""
-    frame = pd.DataFrame(shap_values, columns=columns)
-    groups = [original_feature_of(c) for c in columns]
-    return frame.T.groupby(groups, sort=False).sum().T
 
 
 def shap_importance_table(grouped: pd.DataFrame) -> pd.DataFrame:

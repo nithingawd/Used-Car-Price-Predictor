@@ -146,6 +146,11 @@ prediction:
   # Worked examples: an APE at or below `good` is described as accurate, above `poor` as a miss.
   worked_example_good_ape_pct: 10
   worked_example_poor_ape_pct: 20
+  # 'Similar listings' message: same brand/model within ±window years, at least min rows.
+  similar_age_window: 1
+  similar_min_listings: 10
+  # Number of factors shown in 'why this price'.
+  explanation_factors: 5
 
 models:
   candidates:

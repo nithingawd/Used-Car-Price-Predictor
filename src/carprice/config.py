@@ -131,6 +131,9 @@ class PredictionSettings:
     whatif_chart_age_lines: list[int]
     worked_example_good_ape_pct: float
     worked_example_poor_ape_pct: float
+    similar_age_window: int
+    similar_min_listings: int
+    explanation_factors: int
 
 
 @dataclass(frozen=True)
