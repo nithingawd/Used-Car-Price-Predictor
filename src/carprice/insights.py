@@ -23,6 +23,7 @@ from carprice.predict import FIELD_LABELS, CarSpec, PricePredictor
 
 FACTOR_LABELS: dict[str, str] = {
     **FIELD_LABELS,
+    "model": "Car model",
     "km_per_year": "Kilometres per year",
     "power_per_litre": "Power per litre",
     "is_luxury_brand": "Luxury brand",
