@@ -53,8 +53,9 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 def get_git_commit_hash() -> str:
     """Retrieve the current short git commit hash for model provenance.
 
-    A "-dirty" suffix means the working tree had uncommitted changes when the model was
-    trained, so the code that produced it is HEAD plus those changes.
+    A "-dirty" suffix means the code or config that defines the model (src/, configs/)
+    had uncommitted changes at training time. Generated outputs that training itself
+    rewrites (reports/, models/) are deliberately ignored.
 
     Returns:
         str: 7-character commit SHA (optionally suffixed "-dirty") or 'unknown'.
@@ -64,7 +65,7 @@ def get_git_commit_hash() -> str:
             ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True
         ).stdout.strip()
         status = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
+            ["git", "status", "--porcelain", "--untracked-files=no", "--", "src", "configs"],
             capture_output=True,
             text=True,
             check=True,
