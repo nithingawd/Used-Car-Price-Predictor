@@ -1,9 +1,15 @@
 """Tests for evaluate.py: metric functions on hand-computed examples, plus output checks."""
 
+import json
+from pathlib import Path
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 
+from carprice.config import get_config
 from carprice.evaluate import (
     absolute_percentage_errors,
     adjusted_r2,
@@ -155,3 +161,106 @@ def test_indian_rupee_formatting() -> None:
     assert format_inr_indian(12345678) == "₹ 1,23,45,678"
     assert format_inr_indian(999) == "₹ 999"
     assert format_lakh(550000) == "₹ 5.50 lakh"
+
+
+# ---------------------------------------------------------------------------
+# Acceptance: no number in the written report may be absent from the tables
+# ---------------------------------------------------------------------------
+
+NUMBER_PATTERN = re.compile(r"\d[\d,]*(?:\.\d+)?")
+DECISION_ID_PATTERN = re.compile(r"D-\d+")
+SMALL_INTEGER_LIMIT = 12  # list numbering, "Phase 5", "5-fold", "Q1" and similar
+
+
+def _numbers_in(value: object) -> list[float]:
+    """Every number in a cell, config leaf or string."""
+    if isinstance(value, bool):
+        return []
+    if isinstance(value, int | float):
+        return [] if np.isnan(value) else [float(value)]
+    if isinstance(value, dict):
+        return [n for item in value.values() for n in _numbers_in(item)]
+    if isinstance(value, list):
+        return [n for item in value for n in _numbers_in(item)]
+    return [float(m.replace(",", "")) for m in NUMBER_PATTERN.findall(str(value))]
+
+
+def _allowed_numbers() -> np.ndarray:
+    """Numbers in reports/tables/*.csv, the model card and config, plus their % and lakh forms."""
+    config = get_config()
+    found: list[float] = []
+    for path in config.paths.tables_dir.glob("*.csv"):
+        table = pd.read_csv(path)
+        found += _numbers_in(list(table.columns))
+        found += [n for cell in table.to_numpy().ravel() for n in _numbers_in(cell)]
+    found += _numbers_in(json.loads((config.paths.models_dir / "model_card.json").read_text()))
+    found += _numbers_in(yaml.safe_load(Path("configs/config.yaml").read_text(encoding="utf-8")))
+    base = np.abs(np.array(found))
+    return np.concatenate([base, base * 100, base / 1e5])
+
+
+def _unsupported_numbers(text: str) -> list[str]:
+    """Numbers in text that do not match any allowed number at the precision written."""
+    allowed = _allowed_numbers()
+    missing = []
+    for token in NUMBER_PATTERN.findall(DECISION_ID_PATTERN.sub("", text)):
+        value = float(token.replace(",", ""))
+        decimals = len(token.split(".")[1]) if "." in token else 0
+        if decimals == 0 and value <= SMALL_INTEGER_LIMIT:
+            continue
+        if not np.any(np.isclose(np.round(allowed, decimals), value, atol=1e-9)):
+            missing.append(token)
+    return missing
+
+
+def test_evaluation_summary_numbers_come_from_tables() -> None:
+    """Every number in reports/evaluation_summary.md exists in a saved table or config."""
+    text = (get_config().paths.reports_dir / "evaluation_summary.md").read_text(encoding="utf-8")
+    assert _unsupported_numbers(text) == []
+
+
+def test_notebook_03_markdown_numbers_come_from_tables() -> None:
+    """Every number in notebook 03's markdown cells exists in a saved table or config."""
+    notebook = json.loads(Path("notebooks/03_model_evaluation.ipynb").read_text(encoding="utf-8"))
+    text = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "markdown"
+    )
+    assert _unsupported_numbers(text) == []
+
+
+def test_test_metrics_cover_all_models_and_scales() -> None:
+    """Acceptance: every D-023 metric on both scales for all three models."""
+    table = pd.read_csv(get_config().paths.tables_dir / "test_metrics.csv")
+    assert set(table["model_id"]) == {"final", "ridge_baseline", "dummy_baseline"}
+    required = {
+        "mae_inr",
+        "rmse_inr",
+        "r2_inr",
+        "adj_r2_inr",
+        "mae_log",
+        "rmse_log",
+        "r2_log",
+        "adj_r2_log",
+        "mape_pct",
+        "mdape_pct",
+        "within_10pct",
+        "within_20pct",
+    }
+    assert required <= set(table.columns)
+    assert table[sorted(required)].notna().all().all()
+
+
+def test_segment_table_has_six_segmentations_and_five_worst() -> None:
+    """Acceptance: at least six segmentations and exactly five flagged worst segments."""
+    table = pd.read_csv(get_config().paths.tables_dir / "segment_errors.csv")
+    assert table["segmentation"].nunique() >= 6
+    assert sorted(table["worst_rank"].dropna().astype(int)) == [1, 2, 3, 4, 5]
+
+
+def test_number_checker_flags_invented_numbers() -> None:
+    """The provenance check is not vacuous: an off-by-one rupee figure is caught."""
+    assert _unsupported_numbers("Average miss ₹ 94,649 and 50.98% within 10%") == [
+        "94,649",
+        "50.98",
+    ]
+    assert _unsupported_numbers("Average miss ₹ 94,648 and 50.97% within 10%") == []

@@ -50,7 +50,9 @@ Valuing used cars accurately requires accounting for multifaceted vehicular attr
 │   ├── data.py                # Load, validate, audit, clean (Phase 1)
 │   ├── viz.py                 # Shared plot style and EDA figures (Phase 2)
 │   ├── features.py            # Split, feature engineering, ColumnTransformer (Phase 3)
-│   └── train.py               # CV benchmark, Optuna tuning, final pipeline (Phase 4)
+│   ├── train.py               # CV benchmark, Optuna tuning, final pipeline (Phase 4)
+│   ├── evaluate.py            # Test metrics, segments, bootstrap, SHAP (Phase 5)
+│   └── eval_plots.py          # Evaluation and SHAP figures (Phase 5)
 ├── app/                       # Streamlit web application
 ├── models/                    # Saved pipeline artifacts (.joblib) and metadata JSON
 ├── reports/                   # Figures, summary tables, and final report
@@ -98,7 +100,7 @@ python tasks.py test
 python tasks.py lint
 ```
 
-### 4. Reproduce the Pipeline (Phases 1 to 4)
+### 4. Reproduce the Pipeline (Phases 1 to 5)
 
 Run these in order from the project root. Every step reads its settings from
 `configs/config.yaml` and uses the global seed, so re-running gives the same numbers.
@@ -116,6 +118,10 @@ python tasks.py split
 # Phase 4: CV benchmark, Optuna tuning, final pipeline, encoder comparison
 #          (writes models/*.joblib, models/model_card.json, reports/tables/*.csv)
 python tasks.py train
+
+# Phase 5: score the locked test set once, segments, bootstrap, permutation + SHAP
+#          (narrative: notebooks/03_model_evaluation.ipynb, summary: reports/evaluation_summary.md)
+python tasks.py evaluate
 ```
 
 The saved `.joblib` pipelines are not committed to git, so a fresh clone must run

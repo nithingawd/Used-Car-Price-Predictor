@@ -419,10 +419,46 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-026: Known Limitations of the Final Model (from the test evaluation)
+
+- **Date / Phase:** 2026-11-08 / Phase 5, task 5.4
+- **Context:** The brief asks for the model's known limitations to be recorded. Each item below is backed by `reports/tables/segment_errors.csv`, `top_errors.csv`, `top_error_patterns.csv` or `interval_coverage.csv`.
+- **Limitations:**
+  1. *Old cars (9+ years):* within-10% share 33.92% (9-11 yrs) and 32.74% (12+ yrs), against 50.97% overall. Condition is not recorded, and it matters most for old cars.
+  2. *Luxury cars:* 41.18% within 10% above ₹20 lakh, under-priced by a median 5.76%. 17 of the 20 largest errors are in this band. Coarse `model` labels (e.g. "Rover", "C") hide trim and variant.
+  3. *Cheapest cars:* the lowest training quintile is over-priced by a median 7.26%.
+  4. *Interval calibrated only on average:* overall coverage is 79.96% (well calibrated), but 92.45% for 0-2 year-old cars and 52.38% for 12+ years.
+  5. *Rare categories:* LPG (11 test cars) and brands outside the top 10 cannot be evaluated reliably.
+  6. *Data scope:* listing prices from one platform and one period; no city, condition, accident or ownership history.
+  7. *Unused input:* `km_was_capped` (D-024).
+- **Decision:** No change to the model in this phase (D-025). These limitations will be shown as warnings in the GUI (Phase 6) whenever a user's input falls in a weak segment.
+- **Evidence:** `reports/evaluation_summary.md`, `notebooks/03_model_evaluation.ipynb` sections 6, 7 and 9.
+- **Impact / how to reverse:** addressing items 1 to 4 needs richer data or age-dependent intervals, followed by a fresh hold-out set.
+
+---
+
+### D-027: Phase 5 Implementation Choices
+
+- **Date / Phase:** 2026-11-08 / Phase 5
+- **Choices:**
+  1. *New module `src/carprice/eval_plots.py`* (not a new folder). It holds the evaluation and SHAP figures so `evaluate.py` stays focused on numbers. It reuses the palette and `save_figure()` from `viz.py`. `format_inr_indian()` and `format_lakh()` were added to `viz.py` for the A7 number formats and will be reused by the GUI.
+  2. *Price bands use training-set quintile edges*, so test statistics never define segment boundaries. The luxury band uses the fixed ₹20 lakh threshold from the brief (`evaluation.luxury_threshold_inr`).
+  3. *Adjusted R²* uses p = columns entering the estimator after preprocessing (`count_estimator_inputs()`), 0 for the dummy.
+  4. *Permutation importance* is computed on raw input columns with two scorers: rupee MAE (headline) and log RMSE (training objective). The figure and ranking use log RMSE, because rupee MAE is dominated by expensive cars.
+  5. *SHAP* uses `TreeExplainer` on the fitted XGBoost with a seeded sample of 2,000 test rows. One-hot columns are summed back to their input feature so `brand`, `fuel_type`, `transmission_type` and `seller_type` each get one score. Dependence plots show the effect as a % change in predicted price, `expm1(SHAP) × 100`, which is easier to read than log units.
+  6. *SHAP colour map:* slate → teal for low → high feature values, instead of SHAP's default red-blue, to follow A7 (no rainbow or off-palette colours).
+  7. *`reports/tables/test_predictions.csv`* stores every test prediction with its segment labels, so the GUI's Model Performance page can plot results without loading the test set or the model.
+  8. *Notebook tooling pinned:* `ipykernel`, `nbclient`, `nbformat` were already installed (used to run notebooks 01 to 03). They are now pinned in `requirements.txt`; nothing new was installed.
+  9. *Number provenance is tested:* `tests/test_evaluate.py` extracts every number from `reports/evaluation_summary.md` and from notebook 03's markdown, and fails if any is absent from `reports/tables/`, `model_card.json` or `config.yaml`. A companion test proves it flags an invented figure.
+- **Impact / how to reverse:** settings under `evaluation:` in `config.yaml`; re-run `python tasks.py evaluate`.
+
+---
+
 ## Open questions for the student
 
 1. **Encoder choice depends on the model family (D-014).** For the Ridge probe one-hot encoding of `model` beats TargetEncoder; for the tuned XGBoost winner TargetEncoder wins (see `reports/tables/encoder_comparison.csv`). The production pipeline keeps TargetEncoder because the deployed model is XGBoost. Do you want the linear baseline (`baseline_ridge.joblib`) switched to one-hot so the Ridge comparison in Phase 5 is fairer? This would change Ridge's numbers but not the final model.
 2. **Brand-tier mapping (D-015).** It is now documented as reporting-only. Keep it for the GUI's Market Explorer, or delete it from `config.yaml`?
 3. **Seat imputation before the split (D-022, finding 1).** Accept as negligible, or move it into the Pipeline for strict compliance with A4?
 4. **`km_was_capped` is not a model input (D-024).** Leave as documented, or add it in a later retrain (which would make the current test results contaminated)?
-
+5. **Phase 2 text disagrees with its own table.** `reports/eda_findings.md` quotes Spearman ρ = 0.69 for `max_power` and −0.60 for `vehicle_age`, but `reports/tables/eda_spearman_correlation.csv` contains 0.7211 and −0.4778 (computed on the cleaned data). Phase 5 quotes only the table values. Shall I correct `eda_findings.md` (and check its other figures against the tables) before the final report?
+6. **Uncertainty warnings in the GUI (D-026).** Proposed: show a plain-language caution beside the estimate when the car is 9+ years old, above ₹20 lakh, a luxury brand, or uses a fuel or brand with little data. Agree?
