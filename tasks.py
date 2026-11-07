@@ -143,9 +143,8 @@ def train() -> int:
 
 
 def evaluate() -> int:
-    """Execute model evaluation suite (placeholder)."""
-    print("Evaluation step not implemented yet (scheduled for Phase 5).")
-    return 0
+    """Phase 5: score the locked test set once, then permutation importance and SHAP."""
+    return run_module("carprice.evaluate", "--stage", "all")
 
 
 def app() -> int:
