@@ -1,0 +1,2 @@
+n_rows,actual_above_luxury_threshold,luxury_brand,over_predicted,under_predicted,outside_interval,automatic,dealer_sellers,median_vehicle_age,median_actual_inr,share_of_total_abs_error_pct,share_of_test_rows_pct
+20,17,18,8,12,18,20,15,4.0,4725000,12.04,0.66

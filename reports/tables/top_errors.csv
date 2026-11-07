@@ -1,0 +1,21 @@
+rank,brand,model,vehicle_age,km_driven,seller_type,fuel_type,transmission_type,mileage,engine,max_power,seats,km_was_capped,actual_inr,interval_low,interval_high,inside_interval,abs_error_inr,signed_pct_error,log_residual,pred_final
+1,Mercedes-Amg,C,4,24000,Dealer,Petrol,Automatic,11.9,2996,362.07,5,False,5100000,7182766.0,10522171.0,False,3588363.0,70.36,-0.5327,8.688363e+06
+2,Bmw,7,3,50000,Individual,Diesel,Automatic,16.77,2993,261.49,5,False,8500000,4497111.0,6587903.0,False,3060239.0,-36.0,0.4463,5.439761e+06
+3,Land Rover,Rover,2,19000,Dealer,Diesel,Automatic,22.3,1999,177.0,5,False,6975000,3390000.0,4966076.0,False,2874414.0,-41.21,0.5312,4.100586e+06
+4,Audi,Q7,4,54000,Dealer,Diesel,Automatic,12.07,2967,241.4,7,False,6350000,3307418.0,4845100.0,False,2349306.0,-37.0,0.462,4.000694e+06
+5,Land Rover,Rover,4,9500,Dealer,Diesel,Automatic,12.65,2993,296.0,5,False,9200000,5668401.0,8303750.0,False,2343431.0,-25.47,0.294,6.856569e+06
+6,Jeep,Wrangler,4,40000,Dealer,Petrol,Automatic,9.5,3604,280.0,5,False,4875000,5818151.0,8523121.0,False,2162708.0,44.36,-0.3672,7.037708e+06
+7,Porsche,Cayenne,8,120000,Individual,Diesel,Automatic,15.15,2967,240.0,5,False,5000000,2444824.0,3581470.0,False,2042710.0,-40.85,0.5252,2.95729e+06
+8,Mercedes-Benz,C-Class,6,24000,Dealer,Diesel,Automatic,15.8,2143,170.0,5,False,4200000,1848210.0,2707478.0,False,1964382.0,-46.77,0.6306,2.235618e+06
+9,Mercedes-Benz,Gl-Class,3,15000,Dealer,Petrol,Automatic,11.5,2996,362.0,5,False,6000000,6490524.0,9508093.0,False,1851018.0,30.85,-0.2689,7.851018e+06
+10,Porsche,Cayenne,9,87000,Dealer,Diesel,Automatic,15.15,2967,240.0,5,False,4200000,2166787.0,3174168.0,False,1579027.0,-37.6,0.4715,2.620973e+06
+11,Jaguar,Xe,4,15000,Dealer,Petrol,Automatic,13.6,1999,197.13,5,False,2700000,3292162.0,4822751.0,False,1282240.0,47.49,-0.3886,3.98224e+06
+12,Volkswagen,Polo,3,18523,Dealer,Petrol,Automatic,17.21,1798,189.0,4,False,875000,1775067.0,2600329.0,False,1272143.0,145.39,-0.8977,2.147143e+06
+13,Lexus,Rx,5,17272,Dealer,Petrol,Automatic,18.8,3456,259.0,5,False,8000000,5609430.0,8217362.0,True,1214763.0,-15.18,0.1647,6.785237e+06
+14,Volvo,Xc,1,9000,Dealer,Diesel,Automatic,17.2,1969,235.0,7,False,8195000,5860764.0,8585546.0,True,1105746.0,-13.49,0.1449,7.089254e+06
+15,Bmw,6,3,20000,Dealer,Petrol,Automatic,14.28,1998,254.7,4,False,4575000,4677210.0,6851734.0,False,1082611.0,23.66,-0.2124,5.657611e+06
+16,Mercedes-Benz,S-Class,9,50000,Individual,Diesel,Automatic,13.5,2987,282.0,5,False,3000000,1611327.0,2360464.0,False,1050919.0,-35.03,0.4313,1.949081e+06
+17,Mini,Cooper,3,8000,Individual,Petrol,Automatic,17.33,1998,189.08,4,False,3200000,3497296.0,5123257.0,False,1030374.0,32.2,-0.2791,4.230374e+06
+18,Bmw,X1,6,45000,Dealer,Diesel,Automatic,17.05,1995,184.0,5,False,1300000,1896108.0,2777646.0,False,993556.0,76.43,-0.5677,2.293556e+06
+19,Mercedes-Benz,S-Class,9,30000,Dealer,Diesel,Automatic,13.5,2987,254.79,5,False,3300000,1926469.0,2822122.0,False,969719.0,-29.39,0.3479,2.330281e+06
+20,Bmw,3,13,96000,Individual,Petrol,Automatic,10.9,2497,215.0,5,False,1600000,553335.0,810591.0,False,930679.0,-58.17,0.8715,669321.0

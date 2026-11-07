@@ -1,0 +1,2 @@
+n_test,covered,nominal_pct,coverage_pct,ci_low_pct,ci_high_pct,below_interval_pct,above_interval_pct,median_width_pct_of_pred,verdict
+3049,2438,80.0,79.96,78.5,81.34,10.07,9.97,38.44,well calibrated

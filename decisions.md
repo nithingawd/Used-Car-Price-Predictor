@@ -407,6 +407,18 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-025: One-Time Test-Set Scoring and Post-Hoc Change Policy
+
+- **Date / Phase:** 2026-11-08 / Phase 5, task 5.2
+- **Context:** The brief requires the locked test set to be used once for the final numbers.
+- **What happened:** `test.csv` was read for the first time by `run_test_evaluation()` at code commit `0001bf0`, after the metric set (D-023) and the `km_was_capped` finding (D-024) had been committed. All three models were scored in that single pass; every table under `reports/tables/` named `test_*`, `interval_coverage`, `residual_stats`, `segment_errors`, `top_error*`, `bootstrap_ci` and `train_vs_test` comes from it.
+- **Post-hoc changes:** **none.** No model, feature, hyperparameter, interval quantile or metric definition was changed after the test results were seen. Re-running `python tasks.py evaluate` recomputes the same numbers from the same saved pipelines (seeded bootstrap and permutation), which is a reproduction, not a second look used for selection.
+- **Rule going forward:** if any model change is made after this point (for example acting on D-024 or Open question 1), the current test results must be labelled contaminated in this log, and any new test numbers reported as optimistic.
+- **Evidence:** git history (`0001bf0` → this commit), `reports/tables/test_metrics.csv`.
+- **Impact / how to reverse:** not reversible by design; the test set is now spent for model selection purposes.
+
+---
+
 ## Open questions for the student
 
 1. **Encoder choice depends on the model family (D-014).** For the Ridge probe one-hot encoding of `model` beats TargetEncoder; for the tuned XGBoost winner TargetEncoder wins (see `reports/tables/encoder_comparison.csv`). The production pipeline keeps TargetEncoder because the deployed model is XGBoost. Do you want the linear baseline (`baseline_ridge.joblib`) switched to one-hot so the Ridge comparison in Phase 5 is fairer? This would change Ridge's numbers but not the final model.

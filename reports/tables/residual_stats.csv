@@ -1,0 +1,2 @@
+mean_log_residual,median_log_residual,std_log_residual,skewness,excess_kurtosis,share_beyond_2sd_pct,normal_share_beyond_2sd_pct
+-0.0009,0.0034,0.1648,-0.247,1.875,5.21,4.55

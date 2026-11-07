@@ -1,0 +1,4 @@
+model_id,model,n_test,mae_inr,rmse_inr,r2_inr,adj_r2_inr,mae_log,rmse_log,r2_log,adj_r2_log,mape_pct,mdape_pct,median_signed_pct_error,within_10pct,within_20pct
+final,Final model (tuned XGBoost),3049,94648,202801,0.9328,0.9319,0.1247,0.1648,0.9399,0.9391,12.7,9.75,-0.34,50.97,82.09
+ridge_baseline,Ridge baseline,3049,115850,266575,0.8839,0.8824,0.1457,0.1881,0.9216,0.9206,14.86,12.04,-0.65,42.93,75.11
+dummy_baseline,Dummy baseline (train median),3049,385255,807416,-0.0654,-0.0654,0.5016,0.6732,-0.0036,-0.0036,53.67,37.08,1.08,14.43,29.94

@@ -1,0 +1,8 @@
+metric,bootstrap_mean,ci_low,ci_high,n_resamples,confidence_level
+mae_inr,94695.0,88440.0,101444.0,1000,0.95
+mdape_pct,9.78,9.35,10.28,1000,0.95
+rmse_log,0.1647,0.1589,0.1702,1000,0.95
+r2_log,0.9398,0.9348,0.9452,1000,0.95
+mae_inr_final_minus_ridge,-21250.0,-28252.0,-14851.0,1000,0.95
+within_10pct,50.97,49.23,52.71,1000,0.95
+within_20pct,82.1,80.85,83.47,1000,0.95

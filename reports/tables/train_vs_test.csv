@@ -1,0 +1,4 @@
+split,rmse_log,mae_log,r2_log,rmse_gap_vs_cv_pct
+train (in-sample fit),0.1387,0.1062,0.9596,-16.14
+train (5-fold out-of-fold CV),0.1654,0.1226,0.9426,0.0
+"test (held out, scored once)",0.1648,0.1247,0.9399,-0.36
