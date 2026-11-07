@@ -14,7 +14,7 @@ This document presents the core empirical findings derived from the exploratory 
 ---
 
 ### 2. Engine Power and Displacement Are the Strongest Continuous Predictors
-- **Finding:** Maximum rated power (`max_power`) exhibits the single strongest monotonic association with selling price, boasting a Spearman rank correlation coefficient of **$\rho = 0.69$** (Pearson $r = 0.75$ with log price). Engine displacement (`engine`) closely follows with **$\rho = 0.58$**.
+- **Finding:** Maximum rated power (`max_power`) exhibits the single strongest monotonic association with selling price, boasting a Spearman rank correlation coefficient of **$\rho = 0.72$** (Pearson $r = 0.76$ with log price). Engine displacement (`engine`) closely follows with **$\rho = 0.64$**.
 - **Evidence:** Scatter plots and binned median trends reveal a steep, non-linear exponential valuation curve: vehicles generating under 80 bhp trade at a median of ~₹3.5 lakh, whereas premium engines producing over 180 bhp consistently command valuations exceeding ₹20 lakh.
 - **Supporting Artefacts:** Figures `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_21_scatter_price_vs_engine.png`, Table `reports/tables/eda_spearman_correlation.csv`.
 
@@ -28,7 +28,7 @@ This document presents the core empirical findings derived from the exploratory 
 ---
 
 ### 4. Vehicle Age Follows Predictable Exponential Depreciation
-- **Finding:** Vehicle age (`vehicle_age`) is the primary downward valuation driver ($\rho = -0.60$ with selling price). Depreciation is steepest during the first four years of vehicle life, moderating into a steady linear decay in log space.
+- **Finding:** Vehicle age (`vehicle_age`) is the primary downward valuation driver ($\rho = -0.48$ with selling price). Depreciation is steepest during the first four years of vehicle life, moderating into a steady linear decay in log space.
 - **Evidence:** Across the top volume manufacturers (Maruti, Hyundai, Honda, Toyota, Ford), vehicles experience an estimated **8% to 12% average annual price loss** across years 1 through 7. Toyota exhibits exceptional value retention, maintaining a median price of ₹10.5 lakh across its fleet.
 - **Supporting Artefacts:** Figures `reports/figures/eda_18_scatter_price_vs_age.png`, `reports/figures/eda_22_depreciation_curves.png`, Table `reports/tables/eda_depreciation_rates.csv`.
 
@@ -56,14 +56,14 @@ This document presents the core empirical findings derived from the exploratory 
 ---
 
 ### 8. Moderate Odometer Correlation with Non-Linear Plateau
-- **Finding:** Odometer mileage (`km_driven`) displays a moderate negative rank correlation ($\rho = -0.37$).
+- **Finding:** Odometer mileage (`km_driven`) displays a weak negative rank correlation ($\rho = -0.17$).
 - **Evidence:** Valuations drop sharply during the initial 0 to 60,000 km interval. Beyond 120,000 km, the price degradation curve flattens significantly, indicating that once a vehicle enters high-mileage territory, condition, mechanical health, and vehicle age outweigh marginal odometer gains.
 - **Supporting Artefacts:** Figure `reports/figures/eda_19_scatter_price_vs_km.png`, Table `reports/tables/eda_spearman_correlation.csv`.
 
 ---
 
 ### 9. Collinearity Between Engine Displacement and Max Power
-- **Finding:** Engine displacement and maximum power exhibit substantial collinearity ($r = 0.78, \rho = 0.79$).
+- **Finding:** Engine displacement and maximum power exhibit substantial collinearity ($r = 0.81, \rho = 0.83$).
 - **Evidence:** Variance Inflation Factor (VIF) analysis shows `engine` with a VIF of **6.41** ($R^2 = 0.8439$) and `max_power` with a VIF of **4.56** ($R^2 = 0.7806$). Other numerical features (`vehicle_age`: 1.43, `km_driven`: 1.43, `mileage`: 1.96, `seats`: 2.27) show negligible inflation ($VIF < 2.5$).
 - **Supporting Artefacts:** Table `reports/tables/eda_vif_summary.csv`.
 

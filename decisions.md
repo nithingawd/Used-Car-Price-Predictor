@@ -454,11 +454,21 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-028: Resolution of the Phase 4 and Phase 5 Open Questions
+
+- **Date / Phase:** 2026-11-08 / after Phase 5 (student answers)
+- **Rule given by the student:** choose the option with less work unless it significantly affects final accuracy.
+- **Resolutions:**
+  1. *Ridge baseline encoding (D-014):* **keep as is (TargetEncoder).** The Ridge model is only a baseline; switching it to one-hot would make Ridge look somewhat better but cannot change the final model's accuracy. Changing it now would also be a post-hoc change after test scoring (D-025).
+  2. *Brand-tier mapping (D-015):* **keep** in `config.yaml` as a reporting and GUI grouping (for example the Market Explorer page). It stays out of the model pipeline.
+  3. *Seat imputation before the split (D-022, finding 1):* **keep as is.** It touches 2 of 15,244 rows and uses no price information, so the effect on accuracy is nil. Recorded as an accepted minor deviation from A4.
+  4. *`km_was_capped` not used by the model (D-024):* **keep the model unchanged.** The flag affects 12 rows; retraining would contaminate the test set (D-025) for no meaningful accuracy gain. Permutation importance already shows the flag carries no information to the model.
+  5. *Phase 2 numbers that did not match their tables:* **corrected, text only.** On checking, the correlation figures in `reports/eda_findings.md` and the notebook 02 markdown did not match `eda_spearman_correlation.csv` / `eda_pearson_correlation.csv` on any version of the data (raw, cleaned or train). They are now: Spearman ρ with price 0.72 for `max_power` (was 0.69), 0.64 for `engine` (was 0.58), −0.48 for `vehicle_age` (was −0.60), −0.17 for `km_driven` (was −0.37, now described as weak); Pearson r with log price 0.76 for `max_power` (was 0.75); `engine`–`max_power` r 0.81 and ρ 0.83 (were 0.78 and 0.79). The same edit repaired five `\rho` symbols in notebook 02 that had been saved as a carriage return plus "ho" and rendered as broken text. No code, figure, table or model output changed. Fixing was chosen over leaving it because it took minutes and the final report will quote these figures. A full audit of every other number in Phase 2 was not done.
+  6. *GUI warnings (D-026):* **yes.** Phase 6 will show a plain-language caution beside the estimate when the input car is 9+ years old, is a luxury brand or would sell for more than ₹20 lakh, or uses a brand, model or fuel with little data.
+- **Effect on accuracy:** none. The final model, its test results (D-025) and all Phase 3 to 5 tables are unchanged.
+
+---
+
 ## Open questions for the student
 
-1. **Encoder choice depends on the model family (D-014).** For the Ridge probe one-hot encoding of `model` beats TargetEncoder; for the tuned XGBoost winner TargetEncoder wins (see `reports/tables/encoder_comparison.csv`). The production pipeline keeps TargetEncoder because the deployed model is XGBoost. Do you want the linear baseline (`baseline_ridge.joblib`) switched to one-hot so the Ridge comparison in Phase 5 is fairer? This would change Ridge's numbers but not the final model.
-2. **Brand-tier mapping (D-015).** It is now documented as reporting-only. Keep it for the GUI's Market Explorer, or delete it from `config.yaml`?
-3. **Seat imputation before the split (D-022, finding 1).** Accept as negligible, or move it into the Pipeline for strict compliance with A4?
-4. **`km_was_capped` is not a model input (D-024).** Leave as documented, or add it in a later retrain (which would make the current test results contaminated)?
-5. **Phase 2 text disagrees with its own table.** `reports/eda_findings.md` quotes Spearman ρ = 0.69 for `max_power` and −0.60 for `vehicle_age`, but `reports/tables/eda_spearman_correlation.csv` contains 0.7211 and −0.4778 (computed on the cleaned data). Phase 5 quotes only the table values. Shall I correct `eda_findings.md` (and check its other figures against the tables) before the final report?
-6. **Uncertainty warnings in the GUI (D-026).** Proposed: show a plain-language caution beside the estimate when the car is 9+ years old, above ₹20 lakh, a luxury brand, or uses a fuel or brand with little data. Agree?
+- None open. Questions raised in Phases 4 and 5 are resolved in D-028.
