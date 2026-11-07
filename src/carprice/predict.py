@@ -461,13 +461,22 @@ class PricePredictor:
         return self.score_frame(df, problems)
 
     def score_frame(self, df: pd.DataFrame, problems: list[list[str]]) -> pd.DataFrame:
-        """Run the pipeline on normalised inputs and attach interval and validation columns."""
-        inputs = df.copy()
-        for name in CATEGORICAL_INPUTS:
-            inputs[name] = inputs[name].map(normalise_label)
-        inputs["km_was_capped"] = inputs["km_driven"] >= get_config().cleaning.km_cap
+        """Run the pipeline on every row it can read and attach interval and validation columns.
+
+        Rows whose fields cannot even be parsed (missing values, text in number fields) get no
+        prediction (NaN); rows that parse but break a rule are scored and flagged.
+        """
+        records = df.to_dict(orient="records")
+        parsed = [parse_fields(record) for record in records]
+        readable = [not read_problems for _, read_problems in parsed]
         out = df.copy()
-        out["predicted_inr"] = self.pipeline.predict(inputs)
+        out["predicted_inr"] = np.nan
+        if any(readable):
+            inputs = pd.DataFrame(
+                [values for (values, _), ok in zip(parsed, readable, strict=True) if ok]
+            )
+            inputs["km_was_capped"] = inputs["km_driven"] >= get_config().cleaning.km_cap
+            out.loc[out.index[readable], "predicted_inr"] = self.pipeline.predict(inputs)
         out["lower_inr"], out["upper_inr"] = prediction_interval(
             out["predicted_inr"], self.q_low, self.q_high
         )

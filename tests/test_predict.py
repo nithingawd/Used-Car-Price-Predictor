@@ -282,3 +282,11 @@ def test_timing_meets_targets() -> None:
 def test_car_spec_round_trip() -> None:
     """from_mapping and asdict are inverse for a clean spec."""
     assert asdict(CarSpec.from_mapping(SWIFT)) == SWIFT
+
+
+def test_batch_without_validation_skips_unreadable_rows(predictor: PricePredictor) -> None:
+    """Unreadable rows get no price; rule-breaking but readable rows are still scored."""
+    rows = pd.DataFrame([SWIFT, {**SWIFT, "vehicle_age": "abc"}, {**SWIFT, "brand": "Tesla"}])
+    scored = predictor.predict_batch(rows, validate=False)
+    assert scored["predicted_inr"].notna().tolist() == [True, False, True]
+    assert scored["passes_validation"].tolist() == [True, False, False]
