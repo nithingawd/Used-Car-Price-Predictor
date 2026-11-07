@@ -1,0 +1,45 @@
+# Configuration for Used Car Price Prediction System
+# All paths, seeds, thresholds, and modeling parameters are centralized here.
+
+project:
+  name: "used-car-price-predictor"
+  version: "0.1.0"
+  random_seed: 42
+
+paths:
+  raw_data_path: "data/raw/cardekho_dataset.csv"
+  interim_data_dir: "data/interim"
+  processed_data_dir: "data/processed"
+  models_dir: "models"
+  figures_dir: "reports/figures"
+  tables_dir: "reports/tables"
+  reports_dir: "reports"
+
+splitting:
+  test_size: 0.2
+  cv_folds: 5
+  stratify_by: null
+
+cleaning:
+  # Outlier and validation thresholds (placeholders to be verified during Phase 1 audit)
+  km_cap: 500000
+  min_price: 20000
+  max_price: 25000000
+  min_year: 1995
+  max_year: 2026
+  max_drop_row_fraction: 0.02
+
+features:
+  target_column: "selling_price"
+  brand_tier_mapping: {}
+
+models:
+  candidates:
+    - "linear_regression"
+    - "ridge"
+    - "random_forest"
+    - "xgboost"
+    - "lightgbm"
+  tuning_trials: 50
+  timeout_seconds: 3600
+
