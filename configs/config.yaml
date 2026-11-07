@@ -128,6 +128,25 @@ evaluation:
   shap_dependence_features: 4
   shap_summary_max_features: 15
 
+prediction:
+  # Phase 6 settings (D-029 to D-031).
+  input_schema_file: "input_schema.json"
+  # Caution thresholds shown with an estimate (D-026, D-028 item 6).
+  old_car_age_years: 9
+  rare_training_rows: 50
+  # Acceptance targets for the predictor.
+  max_load_seconds: 2.0
+  max_single_prediction_ms: 100
+  timing_repeats: 50
+  # What-if sweep (task 6.7); the reference car is the most common model in train.csv.
+  whatif_ages: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  whatif_km: [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000, 130000, 140000, 150000]
+  whatif_chart_km_lines: [10000, 50000, 100000, 150000]
+  whatif_chart_age_lines: [1, 4, 8, 12]
+  # Worked examples: an APE at or below `good` is described as accurate, above `poor` as a miss.
+  worked_example_good_ape_pct: 10
+  worked_example_poor_ape_pct: 20
+
 models:
   candidates:
     - "dummy"

@@ -1,0 +1,234 @@
+{
+  "source": "data/processed/train.csv",
+  "n_training_rows": 12195,
+  "brands": {
+    "Audi": {
+      "A4": 82,
+      "A6": 51,
+      "A8": 6,
+      "Q7": 19
+    },
+    "Bentley": {
+      "Continental": 3
+    },
+    "Bmw": {
+      "3": 127,
+      "5": 95,
+      "6": 14,
+      "7": 30,
+      "X1": 44,
+      "X3": 18,
+      "X4": 4,
+      "X5": 23,
+      "Z4": 5
+    },
+    "Datsun": {
+      "Go": 72,
+      "Redi-Go": 9,
+      "Redigo": 55
+    },
+    "Ferrari": {
+      "Gtc4Lusso": 1
+    },
+    "Force": {
+      "Gurkha": 1
+    },
+    "Ford": {
+      "Aspire": 42,
+      "Ecosport": 293,
+      "Endeavour": 33,
+      "Figo": 214,
+      "Freestyle": 28
+    },
+    "Honda": {
+      "Amaze": 302,
+      "City": 606,
+      "Civic": 48,
+      "Cr": 2,
+      "Cr-V": 25,
+      "Jazz": 156,
+      "Wr-V": 84
+    },
+    "Hyundai": {
+      "Aura": 1,
+      "Creta": 253,
+      "Elantra": 40,
+      "Grand": 455,
+      "I10": 330,
+      "I20": 702,
+      "Santro": 103,
+      "Tucson": 8,
+      "Venue": 48,
+      "Verna": 383
+    },
+    "Isuzu": {
+      "D-Max": 6,
+      "Mux": 1
+    },
+    "Jaguar": {
+      "F-Pace": 2,
+      "Xe": 2,
+      "Xf": 43
+    },
+    "Jeep": {
+      "Compass": 28,
+      "Wrangler": 1
+    },
+    "Kia": {
+      "Carnival": 4,
+      "Seltos": 24
+    },
+    "Land Rover": {
+      "Rover": 37
+    },
+    "Lexus": {
+      "Es": 4,
+      "Nx": 2,
+      "Rx": 1
+    },
+    "Mahindra": {
+      "Alturas": 2,
+      "Bolero": 162,
+      "Kuv": 55,
+      "Kuv100": 21,
+      "Marazzo": 19,
+      "Scorpio": 225,
+      "Thar": 46,
+      "Xuv300": 13,
+      "Xuv500": 269
+    },
+    "Maruti": {
+      "Alto": 623,
+      "Baleno": 297,
+      "Celerio": 186,
+      "Ciaz": 280,
+      "Dzire Lxi": 2,
+      "Dzire Vxi": 14,
+      "Dzire Zxi": 1,
+      "Eeco": 98,
+      "Ertiga": 267,
+      "Ignis": 53,
+      "S-Presso": 11,
+      "Swift": 601,
+      "Swift Dzire": 708,
+      "Vitara": 224,
+      "Wagon R": 572,
+      "Xl6": 4
+    },
+    "Maserati": {
+      "Ghibli": 1,
+      "Quattroporte": 1
+    },
+    "Mercedes-Benz": {
+      "C-Class": 91,
+      "Cls": 7,
+      "E-Class": 103,
+      "Gl-Class": 35,
+      "Gls": 9,
+      "S-Class": 29
+    },
+    "Mg": {
+      "Hector": 15
+    },
+    "Mini": {
+      "Cooper": 14
+    },
+    "Nissan": {
+      "Kicks": 7,
+      "X-Trail": 3
+    },
+    "Porsche": {
+      "Cayenne": 13,
+      "Macan": 1,
+      "Panamera": 2
+    },
+    "Renault": {
+      "Duster": 175,
+      "Kwid": 240,
+      "Triber": 11
+    },
+    "Rolls-Royce": {
+      "Ghost": 1
+    },
+    "Skoda": {
+      "Octavia": 46,
+      "Rapid": 150,
+      "Superb": 66
+    },
+    "Tata": {
+      "Altroz": 1,
+      "Harrier": 15,
+      "Hexa": 31,
+      "Nexon": 62,
+      "Safari": 77,
+      "Tiago": 117,
+      "Tigor": 29
+    },
+    "Toyota": {
+      "Camry": 26,
+      "Fortuner": 149,
+      "Glanza": 7,
+      "Innova": 420,
+      "Yaris": 11
+    },
+    "Volkswagen": {
+      "Polo": 293,
+      "Vento": 200
+    },
+    "Volvo": {
+      "S90": 3,
+      "Xc": 5,
+      "Xc60": 3,
+      "Xc90": 3
+    }
+  },
+  "categories": {
+    "seller_type": {
+      "Dealer": 7554,
+      "Individual": 4502,
+      "Trustmark Dealer": 139
+    },
+    "fuel_type": {
+      "Petrol": 6089,
+      "Diesel": 5847,
+      "Cng": 226,
+      "Lpg": 33
+    },
+    "transmission_type": {
+      "Manual": 9651,
+      "Automatic": 2544
+    }
+  },
+  "ranges": {
+    "vehicle_age": {
+      "min": 0.0,
+      "max": 29.0
+    },
+    "km_driven": {
+      "min": 100.0,
+      "max": 500000.0
+    },
+    "mileage": {
+      "min": 4.0,
+      "max": 33.54
+    },
+    "engine": {
+      "min": 793.0,
+      "max": 6592.0
+    },
+    "max_power": {
+      "min": 38.4,
+      "max": 626.0
+    }
+  },
+  "seats_allowed": [
+    2,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "km_cap": 500000
+}

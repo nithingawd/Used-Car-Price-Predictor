@@ -27,7 +27,7 @@ from carprice.evaluate import (
     wilson_interval,
     within_tolerance,
 )
-from carprice.viz import format_inr_indian, format_lakh
+from carprice.formatting import format_inr_indian, format_lakh
 
 # Hand-computed example: errors +10, -20, +30 on prices 100, 200, 300.
 #   MAE = 60/3 = 20;  RMSE = sqrt((100 + 400 + 900)/3) = sqrt(466.67) = 21.6025

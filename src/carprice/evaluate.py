@@ -22,6 +22,7 @@ from sklearn.metrics import make_scorer
 from carprice.config import get_config
 from carprice.data import validate_schema
 from carprice.features import CATEGORICAL_FEATURES
+from carprice.predict import prediction_interval
 from carprice.train import load_training_data
 
 logger = logging.getLogger(__name__)
@@ -230,14 +231,6 @@ def load_models() -> dict[str, TransformedTargetRegressor]:
         "ridge_baseline": joblib.load(models_dir / "baseline_ridge.joblib"),
         "dummy_baseline": fit_dummy_baseline(X_train, y_train),
     }
-
-
-def prediction_interval(
-    pred_inr: np.ndarray, q_low: float, q_high: float
-) -> tuple[np.ndarray, np.ndarray]:
-    """Apply D-020 log-residual quantiles: [expm1(log1p(pred)+q_low), expm1(log1p(pred)+q_high)]."""
-    log_pred = np.log1p(np.asarray(pred_inr, dtype=float))
-    return np.expm1(log_pred + q_low), np.expm1(log_pred + q_high)
 
 
 def build_prediction_frame(

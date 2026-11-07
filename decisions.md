@@ -469,6 +469,43 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-029: Prediction Input Validation Rules
+
+- **Date / Phase:** 2026-11-08 / Phase 6, tasks 6.1 to 6.3
+- **Context:** The predictor must refuse inputs it cannot price sensibly and explain why in words a GUI user understands. Tree models cannot extrapolate: outside the training range they just repeat the nearest leaf, so a price for a 40-year-old car would look precise but mean nothing.
+- **Where the allowed values come from:** `models/input_schema.json`, built by `build_input_schema()` from `data/processed/train.csv` **only** (12,195 rows). It records the brand → model pairs with row counts, the allowed levels of seller, fuel and transmission with counts, numeric min and max, and the allowed seat counts. Test data never shapes the rules. Rebuild with `python -m carprice.predict build-schema`.
+- **Options considered:** (a) hard-coded "physically plausible" bounds in config; (b) the range actually seen in training; (c) no range checks, warnings only.
+- **Decision:** (b), with these rules:
+  1. *Normalisation first:* labels are trimmed and title-cased exactly as Phase 1 cleaning did, so `" bmw "` → `Bmw`. Numbers may include thousands separators (`"60,000"`).
+  2. *Missing or unreadable fields:* every one of the 11 CarSpec fields is required. Text where a number is expected, NaN or infinity is refused.
+  3. *Whole numbers:* `vehicle_age`, `km_driven`, `engine` and `seats` must be integers (4.5 years is refused, not rounded).
+  4. *Numeric ranges:* `vehicle_age` 0 to 29, `km_driven` 100 to 5,00,000, `mileage` 4 to 33.54 kmpl, `engine` 793 to 6,592 cc, `max_power` 38.4 to 626 bhp: the minimum and maximum in train.csv. `seats` must be one of 2, 4, 5, 6, 7, 8, 9.
+  5. *Categories:* seller `Dealer`, `Individual`, `Trustmark Dealer`; fuel `Petrol`, `Diesel`, `Cng`, `Lpg`; transmission `Manual`, `Automatic`. Anything else (for example `Electric`) is refused with the list of valid choices.
+  6. *Brand and model:* see D-030.
+  7. *All problems at once:* parsing and rule checks run on every field that could be read, so a user sees every problem in a single message instead of fixing them one at a time.
+- **How errors surface:** `InputError`, a subclass of `ValueError`, carries `.problems` (a list of sentences) and a combined message starting "Please check the car details:". The CLI prints these sentences and exits with code 2, never a traceback. The GUI can show `.problems` as a bullet list.
+- **Cautions are not errors:** a valid car in a weak segment (D-026) is priced but gets plain-language cautions in `PredictionResult.cautions`. They fire for age ≥ 9 years (`prediction.old_car_age_years`), a luxury brand or a predicted price above ₹20 lakh, a brand/model with fewer than 50 training rows (`prediction.rare_training_rows`), and a fuel with fewer than 50 training rows (LPG has 33). This implements D-028 item 6 at the logic level; the GUI phase will display them. (D-028 said "Phase 6 will show"; the display belongs to the GUI phase, and the logic is in place now.)
+- **Evidence:** `src/carprice/predict.py` (`parse_fields`, `validate_values`, `caution_messages`), `models/input_schema.json`, `tests/test_predict.py`.
+- **Impact / how to reverse:** edit `build_input_schema()` or the `prediction:` block of `config.yaml`, then rebuild the schema.
+
+---
+
+### D-030: Enforcing Brand/Model Consistency
+
+- **Date / Phase:** 2026-11-08 / Phase 6, task 6.3
+- **Context:** In the cleaned data every one of the 119 model names belongs to exactly one of 30 brands (`eda_model_cross_brand.csv` is empty), so a model name determines its brand. The pipeline encodes `model` with a TargetEncoder that silently maps unknown names to the global mean, which would hide a typo behind a plausible-looking price.
+- **Rule:** the brand must be a training brand, and the model must appear under **that** brand in `input_schema.json`. Three distinct messages:
+  - unknown brand: "Brand 'Tesla' is not in the training data. Known brands: …";
+  - model of another brand: "Model 'Swift' is made by Maruti, not Hyundai." (detected by looking the model up across all brands);
+  - unknown model: "Model 'Zen Estilo X' is not a known Maruti model. Known Maruti models: …" (up to 12 listed, then "and N more").
+- **Options considered:** (a) accept unknown models and let the encoder fall back to the average; (b) fuzzy-match close spellings; (c) strict lookup against training pairs.
+- **Decision:** (c). (a) produces confident nonsense for typos; (b) adds a dependency and guesswork. The GUI phase will offer the model list as a dropdown filtered by brand, so strict lookup costs users nothing.
+- **Known consequence:** one test car, a Mercedes-AMG C (brand absent from training), would be refused by the GUI. It is still scored in `reports/predictions/test_predictions.csv` with `predict_batch(validate=False)` and flagged `passes_validation = False`, so the file covers every test row (D-031).
+- **Evidence:** `brand_model_problems()` in `src/carprice/predict.py`; tests in `tests/test_predict.py`.
+- **Impact / how to reverse:** relax `brand_model_problems()`; not recommended.
+
+---
+
 ## Open questions for the student
 
 - None open. Questions raised in Phases 4 and 5 are resolved in D-028.

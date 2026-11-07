@@ -116,6 +116,24 @@ class EvaluationSettings:
 
 
 @dataclass(frozen=True)
+class PredictionSettings:
+    """Phase 6 predictor, caution, timing and report settings."""
+
+    input_schema_file: str
+    old_car_age_years: int
+    rare_training_rows: int
+    max_load_seconds: float
+    max_single_prediction_ms: float
+    timing_repeats: int
+    whatif_ages: list[int]
+    whatif_km: list[int]
+    whatif_chart_km_lines: list[int]
+    whatif_chart_age_lines: list[int]
+    worked_example_good_ape_pct: float
+    worked_example_poor_ape_pct: float
+
+
+@dataclass(frozen=True)
 class ModelsSettings:
     """Model training, candidate algorithms, and tuning configurations."""
 
@@ -139,6 +157,7 @@ class AppConfig:
     features: FeaturesSettings
     feature_checks: FeatureCheckSettings
     evaluation: EvaluationSettings
+    prediction: PredictionSettings
     models: ModelsSettings
 
 
@@ -211,6 +230,7 @@ def load_config(config_path: Path | str | None = None) -> AppConfig:
         features=FeaturesSettings(**data["features"]),
         feature_checks=FeatureCheckSettings(**data["feature_checks"]),
         evaluation=EvaluationSettings(**data["evaluation"]),
+        prediction=PredictionSettings(**data["prediction"]),
         models=ModelsSettings(**data["models"]),
     )
 

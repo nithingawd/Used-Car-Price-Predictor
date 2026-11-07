@@ -15,6 +15,7 @@ from scipy import stats
 
 from carprice.config import get_config
 from carprice.features import CATEGORICAL_FEATURES
+from carprice.formatting import format_inr_indian
 from carprice.viz import (
     ACCENT_AMBER,
     CATEGORICAL_PALETTE,
@@ -22,7 +23,6 @@ from carprice.viz import (
     MUTED_TEXT,
     PRIMARY_TEAL,
     apply_style,
-    format_inr_indian,
     save_figure,
 )
 
