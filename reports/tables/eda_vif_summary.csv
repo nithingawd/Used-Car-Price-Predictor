@@ -1,0 +1,7 @@
+feature,r_squared,vif
+vehicle_age,0.3008,1.43
+km_driven,0.2997,1.43
+mileage,0.4902,1.96
+engine,0.8439,6.41
+max_power,0.7806,4.56
+seats,0.5597,2.27

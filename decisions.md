@@ -139,6 +139,53 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-009: Target Transformation to Logarithmic Price (log1p)
+
+- **Date / Phase:** 2026-11-07 / Phase 2
+- **Context:** The raw distribution of `selling_price` is heavily right-skewed with a skewness coefficient of 10.11, median of ₹5.59 lakh, mean of ₹7.75 lakh, and a maximum reaching ₹3.95 crore.
+- **Options considered:**
+  - (a) Predict raw selling price directly in INR.
+  - (b) Apply Box-Cox power transformation.
+  - (c) Apply natural logarithmic transformation $y' = \log(1 + y)$ (`log1p`) with exponential inverse transformation $\exp(y') - 1$ (`expm1`).
+- **Decision:** Adopt option (c) using `TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)`.
+- **Reason:** `log1p` stabilizes error variance (homoscedasticity) across orders of magnitude and reduces skewness from 10.11 down to 0.56 (a near-Gaussian target). Direct raw regression causes squared-error loss functions to be dominated by the 1% luxury tail at the expense of typical mass-market predictions. Box-Cox requires estimating $\lambda$ on training folds, introducing unnecessary pipeline complexity for negligible gain over natural log.
+- **Evidence:** `reports/figures/eda_01_selling_price_raw_vs_log.png`, `reports/tables/eda_numeric_summary.csv`, `notebooks/02_eda.ipynb` Section 2.
+- **Impact / how to reverse:** Encapsulated in the target regressor inside `src/carprice/train.py`.
+
+---
+
+### D-010: Feature Engineering Proposals Derived from Exploratory Analysis
+
+- **Date / Phase:** 2026-11-07 / Phase 2
+- **Context:** EDA revealed domain-specific non-linear interactions, usage degradation patterns, and high brand cardinality (32 brands with 14 brands having $< 30$ rows).
+- **Options considered:**
+  - (a) Rely solely on raw features without domain transformations.
+  - (b) Engineer interaction and ratio features:
+    1. `power_per_litre`: $\text{max\_power} / (\text{engine} / 1000)$ capturing engine efficiency and turbocharging.
+    2. `km_per_year`: $\text{km\_driven} / \max(\text{vehicle\_age}, 1)$ capturing fleet vs private usage wear.
+    3. `brand_tier`: Grouping 32 brands into 5 hierarchical tiers (`Budget`, `Mid`, `Premium`, `Luxury`, `Ultra-Luxury`) based on median valuation quartiles.
+    4. `power_x_automatic`: Interaction indicator between engine power and automatic transmission.
+- **Decision:** Adopt option (b).
+- **Reason:** Empirical evidence shows automatic gearboxes command a statistically significant 2.74x premium ($p < 0.001$) across all power bands; engine displacement and power exhibit collinearity (VIF 6.41 and 4.56); and rare brands cause sparse high-dimensional one-hot matrices unless consolidated into structured market tiers.
+- **Evidence:** `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_24_interaction_power_transmission.png`, `reports/tables/eda_vif_summary.csv`, `reports/tables/eda_brand_medians.csv`.
+- **Impact / how to reverse:** Implemented as a leak-free scikit-learn transformer in `src/carprice/features.py` during Phase 3.
+
+---
+
+### D-011: Statistical Hypothesis Testing Framework and Non-Parametric Metrics
+
+- **Date / Phase:** 2026-11-07 / Phase 2
+- **Context:** To substantiate market driver claims for viva defence, formal hypothesis tests were required to evaluate whether automatic transmission and dealer premiums are statistically genuine after controlling for confounding factors.
+- **Options considered:**
+  - (a) Standard two-sample Student's t-test and ANOVA.
+  - (b) Non-parametric Mann-Whitney U test and Kruskal-Wallis H test with rank-biserial effect sizes ($r_{rb}$).
+- **Decision:** Adopt option (b).
+- **Reason:** Price distributions violate the normality assumption required by t-tests even after transformation. Mann-Whitney U evaluates rank-order stochastic dominance without distributional assumptions. Reporting rank-biserial effect sizes ($r_{rb} = 0.26$ to $0.61$) ensures practical significance is proven rather than relying solely on low $p$-values driven by large sample size ($N = 15,244$).
+- **Evidence:** `reports/tables/eda_hypothesis_tests.csv`, `notebooks/02_eda.ipynb` Section 10.
+- **Impact / how to reverse:** Governed by analysis scripts; test outputs persisted in `reports/tables/eda_hypothesis_tests.csv`.
+
+---
+
 ## Open questions for the student
 
 - None currently for Phase 0.

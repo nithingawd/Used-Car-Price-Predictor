@@ -1,0 +1,7 @@
+hypothesis,test,sample_auto,sample_manual,median_auto_inr,median_manual_inr,statistic,p_value,effect_size_rank_biserial,significance
+Automatic price > Manual price in Q1 (38-74 bhp),Mann-Whitney U,286,3910,449500,340000,815986.5,7.021597681320098e-39,0.459,Significant (p < 0.001)
+Automatic price > Manual price in Q2 (74-88 bhp),Mann-Whitney U,430,3362,630000,525000,950796.0,7.374889489564035e-27,0.315,Significant (p < 0.001)
+Automatic price > Manual price in Q3 (88-118 bhp),Mann-Whitney U,496,3026,712500,625000,943610.0,1.7417977080814866e-20,0.257,Significant (p < 0.001)
+Automatic price > Manual price in Q4 (118-626 bhp),Mann-Whitney U,1938,1796,1650000,875000,2798943.0,2.853637009240876e-227,0.608,Significant (p < 0.001)
+Dealer listing prices > Individual listing prices,Mann-Whitney U,9459,5612,590000,510000,31286780.0,1.013233240873909e-75,0.179,Significant (p < 0.001)
+"Price differences across Fuel Types (Diesel, Petrol, CNG)",Kruskal-Wallis H,7342,7559,700000,460000,2527.5,0.0,0.32,Significant (p < 0.001)
