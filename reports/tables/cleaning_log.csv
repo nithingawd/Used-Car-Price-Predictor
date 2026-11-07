@@ -1,0 +1,8 @@
+rule_name,rows_before,rows_after,rows_affected,details
+drop_identifier_columns,15411,15411,15411,"Dropped identifier columns: ['Unnamed: 0', 'car_name']"
+normalise_text,15411,15411,3344,Trimmed whitespace and applied title casing to categorical columns
+drop_exact_duplicates,15411,15244,167,Removed 167 exact duplicate feature rows (kept first occurrence)
+fix_invalid_seats,15244,15244,2,Imputed 2 rows with seats=0 to brand/model modal count
+fix_fuel_labels,15244,15244,4,Recoded 4 Electric hybrid Camry rows to Petrol
+treat_km_outliers,15244,15244,12,"Capped 12 rows with km_driven > 500,000 and added km_was_capped flag"
+validate_ranges,15244,15244,0,"Verified physical plausibility of engine, power, mileage, age, and price"

@@ -1,0 +1,15 @@
+column_name,data_type,non_null_count,null_count,null_percentage,unique_values
+Unnamed: 0,int64,15411,0,0.0,15411
+car_name,string,15411,0,0.0,121
+brand,string,15411,0,0.0,32
+model,string,15411,0,0.0,120
+vehicle_age,int64,15411,0,0.0,24
+km_driven,int64,15411,0,0.0,3688
+seller_type,string,15411,0,0.0,3
+fuel_type,string,15411,0,0.0,5
+transmission_type,string,15411,0,0.0,2
+mileage,float64,15411,0,0.0,411
+engine,int64,15411,0,0.0,110
+max_power,float64,15411,0,0.0,342
+seats,int64,15411,0,0.0,8
+selling_price,int64,15411,0,0.0,1086

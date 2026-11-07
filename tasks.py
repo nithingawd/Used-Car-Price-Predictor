@@ -61,7 +61,31 @@ def clean() -> int:
                 import shutil
 
                 shutil.rmtree(path, ignore_errors=True)
+
+    # Clean interim and processed data files (preserve .gitkeep and raw data)
+    for folder in ["data/interim", "data/processed"]:
+        folder_path = PROJECT_ROOT / folder
+        if folder_path.exists():
+            for item in folder_path.iterdir():
+                if item.name != ".gitkeep":
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        import shutil
+
+                        shutil.rmtree(item, ignore_errors=True)
     return 0
+
+
+def clean_data() -> int:
+    """Run data audit and cleaning pipeline from raw data."""
+    py = str(PYTHON_EXE if PYTHON_EXE.exists() else sys.executable)
+    code = (
+        "import sys; sys.path.insert(0, 'src'); "
+        "from carprice.data import run_data_audit, run_cleaning; "
+        "run_data_audit(); run_cleaning()"
+    )
+    return run_command([py, "-c", code])
 
 
 def test() -> int:
@@ -103,7 +127,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Used Car Price Predictor task runner")
     parser.add_argument(
         "target",
-        choices=["setup", "clean", "train", "evaluate", "app", "test", "lint"],
+        choices=["setup", "clean", "clean-data", "train", "evaluate", "app", "test", "lint"],
         help="Task target to execute",
     )
     args = parser.parse_args()
@@ -111,6 +135,7 @@ def main() -> None:
     targets = {
         "setup": setup,
         "clean": clean,
+        "clean-data": clean_data,
         "train": train,
         "evaluate": evaluate,
         "app": app,

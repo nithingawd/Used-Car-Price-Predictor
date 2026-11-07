@@ -1,4 +1,4 @@
-.PHONY: setup clean train evaluate app test lint
+.PHONY: setup clean clean-data train evaluate app test lint
 
 PYTHON := $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,$(if $(wildcard .venv/bin/python),.venv/bin/python,python))
 
@@ -7,6 +7,9 @@ setup:
 
 clean:
 	$(PYTHON) tasks.py clean
+
+clean-data:
+	$(PYTHON) tasks.py clean-data
 
 train:
 	$(PYTHON) tasks.py train

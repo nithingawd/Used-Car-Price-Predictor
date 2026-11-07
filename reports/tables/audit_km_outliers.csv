@@ -1,0 +1,13 @@
+Unnamed: 0,car_name,brand,model,vehicle_age,km_driven,seller_type,fuel_type,transmission_type,mileage,engine,max_power,seats,selling_price
+3477,Ford Figo,Ford,Figo,10,570000,Dealer,Petrol,Manual,15.6,1196,70.0,5,200000
+5754,Renault Duster,Renault,Duster,4,850000,Dealer,Diesel,Manual,19.87,1461,83.8,5,850000
+8565,Volkswagen Vento,Volkswagen,Vento,9,830000,Dealer,Diesel,Manual,20.54,1598,103.6,5,380000
+9367,Ford Ecosport,Ford,Ecosport,6,720000,Dealer,Diesel,Manual,22.7,1498,89.84,5,675000
+9636,Toyota Fortuner,Toyota,Fortuner,2,590000,Dealer,Diesel,Manual,14.24,2755,174.5,7,2850000
+11291,Toyota Innova,Toyota,Innova,6,950000,Dealer,Diesel,Manual,12.99,2494,100.6,7,950000
+11792,Skoda Rapid,Skoda,Rapid,5,675000,Dealer,Diesel,Automatic,21.66,1498,103.52,5,675000
+13242,Honda Jazz,Honda,Jazz,4,525000,Dealer,Petrol,Manual,18.7,1199,88.7,5,525000
+13790,Hyundai Creta,Hyundai,Creta,6,825000,Dealer,Diesel,Manual,19.67,1582,126.2,5,825000
+14746,Volkswagen Polo,Volkswagen,Polo,5,820000,Dealer,Petrol,Automatic,17.21,1197,103.5,5,695000
+15108,Mercedes-Benz E-Class,Mercedes-Benz,E-Class,9,1325000,Dealer,Diesel,Automatic,11.5,2987,210.0,5,1350000
+19542,Mahindra XUV500,Mahindra,XUV500,5,3800000,Dealer,Diesel,Manual,16.0,2179,140.0,7,1225000

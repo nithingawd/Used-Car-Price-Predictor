@@ -1,0 +1,9 @@
+check_description,offending_rows,percentage,engineering_verdict
+Seats outside 2 to 9,2,0.013,Data entry error (seats=0) requiring imputation
+Vehicle age == 0 years,5,0.032,Brand new showroom cars (< 1 year old)
+"Kilometres per year > 100,000",13,0.084,Extreme commercial usage or odometer anomalies
+Mileage outside 8 to 30 kmpl,105,0.681,Supercars (low mileage) or hyper-milers
+Power per litre outside 25-155 bhp/L,175,1.136,Naturally aspirated entry vs high-boost turbo
+"Selling price < 50,000 INR",2,0.013,"Heavily depreciated, scrap, or project cars"
+Fuel type == 'Electric',4,0.026,Toyota Camry hybrids mislabelled as Electric
+"Odometer km_driven > 500,000",12,0.078,Extreme high-leverage outliers requiring capping

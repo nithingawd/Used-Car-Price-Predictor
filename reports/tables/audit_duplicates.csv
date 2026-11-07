@@ -1,0 +1,4 @@
+scope,duplicate_rows,percentage,relevance
+Raw with Unnamed: 0,0,0.0,Index column prevents exact row matching
+Excluding Identifiers (Exact Duplicates),167,1.084,Must be removed to prevent train/test leakage
+"Identical Specs, Different Price",2148,13.938,Genuine market pricing variance; keep in dataset

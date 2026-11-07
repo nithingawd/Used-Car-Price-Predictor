@@ -1,0 +1,5 @@
+Unnamed: 0,car_name,brand,model,vehicle_age,km_driven,seller_type,fuel_type,transmission_type,mileage,engine,max_power,seats,selling_price
+2568,Toyota Camry,Toyota,Camry,6,49500,Dealer,Electric,Automatic,19.16,2494,157.7,5,1850000
+14765,Toyota Camry,Toyota,Camry,6,60000,Individual,Electric,Automatic,19.16,2494,157.7,5,2000000
+18164,Toyota Camry,Toyota,Camry,5,85000,Dealer,Electric,Automatic,19.16,2494,157.7,5,1865000
+18508,Toyota Camry,Toyota,Camry,6,64000,Dealer,Electric,Automatic,19.16,2494,157.7,5,1699000
