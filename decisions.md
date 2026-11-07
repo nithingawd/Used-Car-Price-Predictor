@@ -375,9 +375,42 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-023: Evaluation Metrics and Headline Metric (written before opening test.csv)
+
+- **Date / Phase:** 2026-11-08 / Phase 5, task 5.1
+- **Context:** The test set (`data/processed/test.csv`, 3,049 rows) is scored once. The metric set must be fixed before any test number is seen, so results cannot steer which metrics get reported.
+- **Metrics, and why each is reported (final model, Ridge baseline, dummy baseline):**
+  1. *MAE and RMSE in rupees.* The error a buyer or seller actually feels. MAE is the average miss and is robust to the luxury tail. RMSE squares errors, so a few large misses on ₹50 lakh+ cars dominate it; reporting both shows how much of the error sits in that tail.
+  2. *MAE and RMSE on log price.* `log1p(price)` is what the model was trained to minimise (D-009, D-017), so these are the scores directly comparable with the training CV figures in `model_card.json` and `cv_results.csv`. A log error of 0.10 is roughly a 10% miss at any price level.
+  3. *R² on both scales, plus adjusted R².* Share of price variance explained. Log-scale R² matches training; rupee-scale R² is dominated by expensive cars. Adjusted R² penalises predictor count with p = number of columns entering the estimator after preprocessing (39 for both Ridge and XGBoost; 0 for the dummy). With n = 3,049, p = 39 the adjustment is small; it is reported because the brief asks for it, not because it changes conclusions.
+  4. *MAPE and median absolute percentage error (MdAPE).* Relative error is how people judge car prices ("it was 8% off"). MAPE is the mean and is pulled up by cheap cars, where a ₹40,000 miss on a ₹1.5 lakh car is a 27% error. MdAPE is the typical car's error and is robust to that.
+  5. *Share of predictions within 10% and within 20% of the true price.* The easiest accuracy figure to explain in the GUI and the viva ("N in 10 cars are priced within 10% of the true price").
+  6. *80% interval coverage.* Share of test cars whose true price falls inside the interval from D-020, with a 95% binomial (Wilson) confidence interval. **Verdict rule:** "well calibrated" if the nominal 80% lies inside that confidence interval, otherwise "over-confident" (coverage too low) or "conservative" (too high).
+- **Headline metric:** **MAE in rupees together with the within-10% share.** MAE answers "how many rupees off, on average", in the unit the user cares about. Within-10% answers "how often is it close", is independent of price level, and is not distorted by cheap cars the way MAPE is. Log RMSE stays the *model-selection* metric (D-019) and is not re-optimised on the test set.
+- **Uncertainty:** 1,000 bootstrap resamples of the test rows (seed 42), percentile 95% intervals for MAE (₹), within-10%, within-20%, MdAPE, log RMSE and R² (log), and for the MAE difference between the final model and Ridge.
+- **Segment ranking:** the "worst" segments are ranked by **lowest within-10% share** among segments with at least `evaluation.min_segment_rows` (30) test rows. Ranking by rupee MAE would simply list the most expensive segments, which is a property of price level, not model weakness; the row minimum stops tiny segments from topping the list by chance.
+- **Dummy baseline:** `DummyRegressor(strategy="median")` on log price, fitted on `train.csv` only, matching the dummy in the Phase 4 benchmark. It is not saved as a file, because it has no learned parameters beyond one median.
+- **Evidence:** `configs/config.yaml` → `evaluation`, `src/carprice/evaluate.py`.
+- **Impact / how to reverse:** change `evaluation.*` and re-run `python tasks.py evaluate`; any change after results are seen must be logged as post-hoc (D-025).
+
+---
+
+### D-024: `km_was_capped` Flag Is Not Used by the Model (found before test evaluation)
+
+- **Date / Phase:** 2026-11-08 / Phase 5, before opening test.csv
+- **Context:** D-004 added `km_was_capped` so that "trees can learn if it matters". Inspecting the saved pipeline shows the `ColumnTransformer` lists no such column and uses `remainder="drop"`, so the flag is silently discarded. The 39 columns the estimator sees are listed by `final_pipeline.regressor_.named_steps['features'].named_steps['preprocess'].get_feature_names_out()`.
+- **Options considered:** (a) add the flag to the numeric columns and retrain before Phase 5; (b) keep the model as is and record the gap.
+- **Decision:** (b). The model is not changed.
+- **Reason:** The flag is set on 12 of 15,244 rows (0.08%, `cleaning_log.csv`), and capped km already limits their leverage (D-004). Retraining would reopen Phase 4 for a negligible effect. Because this was found before the test set was opened, the choice is not influenced by test results. Permutation importance in task 5.3 will show it as exactly zero, which confirms the finding.
+- **Correction to D-004:** the cap is applied; the flag is kept in the data but is not a model input.
+- **Impact / how to reverse:** add `"km_was_capped"` to `NUMERIC_FEATURES` in `src/carprice/features.py`, then re-run `python tasks.py train`. Doing so after this phase would be a post-hoc change and would contaminate the test set (D-025).
+
+---
+
 ## Open questions for the student
 
 1. **Encoder choice depends on the model family (D-014).** For the Ridge probe one-hot encoding of `model` beats TargetEncoder; for the tuned XGBoost winner TargetEncoder wins (see `reports/tables/encoder_comparison.csv`). The production pipeline keeps TargetEncoder because the deployed model is XGBoost. Do you want the linear baseline (`baseline_ridge.joblib`) switched to one-hot so the Ridge comparison in Phase 5 is fairer? This would change Ridge's numbers but not the final model.
 2. **Brand-tier mapping (D-015).** It is now documented as reporting-only. Keep it for the GUI's Market Explorer, or delete it from `config.yaml`?
 3. **Seat imputation before the split (D-022, finding 1).** Accept as negligible, or move it into the Pipeline for strict compliance with A4?
+4. **`km_was_capped` is not a model input (D-024).** Leave as documented, or add it in a later retrain (which would make the current test results contaminated)?
 

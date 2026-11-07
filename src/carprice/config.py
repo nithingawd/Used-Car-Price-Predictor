@@ -95,6 +95,27 @@ class FeatureCheckSettings:
 
 
 @dataclass(frozen=True)
+class EvaluationSettings:
+    """Phase 5 test-set evaluation, segmentation, bootstrap and explainability settings."""
+
+    interval_nominal_coverage: float
+    within_tolerances: list[float]
+    luxury_threshold_inr: int
+    price_band_bins: int
+    top_brands: int
+    age_band_edges: list[int]
+    min_segment_rows: int
+    worst_segments: int
+    top_errors: int
+    bootstrap_resamples: int
+    confidence_level: float
+    permutation_repeats: int
+    shap_sample_rows: int
+    shap_dependence_features: int
+    shap_summary_max_features: int
+
+
+@dataclass(frozen=True)
 class ModelsSettings:
     """Model training, candidate algorithms, and tuning configurations."""
 
@@ -117,6 +138,7 @@ class AppConfig:
     eda: EdaSettings
     features: FeaturesSettings
     feature_checks: FeatureCheckSettings
+    evaluation: EvaluationSettings
     models: ModelsSettings
 
 
@@ -188,6 +210,7 @@ def load_config(config_path: Path | str | None = None) -> AppConfig:
         eda=EdaSettings(**data["eda"]),
         features=FeaturesSettings(**data["features"]),
         feature_checks=FeatureCheckSettings(**data["feature_checks"]),
+        evaluation=EvaluationSettings(**data["evaluation"]),
         models=ModelsSettings(**data["models"]),
     )
 

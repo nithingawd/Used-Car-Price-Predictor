@@ -58,3 +58,13 @@ def test_every_tuned_model_has_a_search_space() -> None:
             assert spec["type"] in {"int", "float"}
             assert spec["low"] < spec["high"]
     assert set(models.candidate_params) == set(models.candidates)
+
+
+def test_evaluation_settings_are_sane() -> None:
+    """Phase 5 evaluation settings load and are internally consistent (D-023)."""
+    evaluation = get_config().evaluation
+    assert 0 < evaluation.interval_nominal_coverage < 1
+    assert 0 < evaluation.confidence_level < 1
+    assert evaluation.within_tolerances == sorted(evaluation.within_tolerances)
+    assert evaluation.age_band_edges == sorted(evaluation.age_band_edges)
+    assert evaluation.bootstrap_resamples >= 100

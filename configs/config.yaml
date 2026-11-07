@@ -109,6 +109,25 @@ feature_checks:
   # min_frequency for the one-hot alternative when comparing encoders for `model` (D-014).
   model_onehot_min_frequency: 10
 
+evaluation:
+  # Phase 5 settings (D-023, D-025). The test set is scored once with these values.
+  interval_nominal_coverage: 0.80
+  within_tolerances: [0.10, 0.20]
+  luxury_threshold_inr: 2000000
+  price_band_bins: 5
+  top_brands: 10
+  # Vehicle-age band edges in years, left-closed: [0,3) [3,6) [6,9) [9,12) [12,inf)
+  age_band_edges: [0, 3, 6, 9, 12]
+  min_segment_rows: 30
+  worst_segments: 5
+  top_errors: 20
+  bootstrap_resamples: 1000
+  confidence_level: 0.95
+  permutation_repeats: 10
+  shap_sample_rows: 2000
+  shap_dependence_features: 4
+  shap_summary_max_features: 15
+
 models:
   candidates:
     - "dummy"
