@@ -1,0 +1,16 @@
+feature,mean_abs_shap_log,share_pct
+model,0.2532,30.41
+vehicle_age,0.1694,20.35
+max_power,0.1064,12.78
+engine,0.068,8.16
+age_x_power,0.0539,6.47
+transmission_type,0.0429,5.15
+km_driven,0.0415,4.98
+fuel_type,0.0235,2.82
+seller_type,0.0179,2.15
+power_per_litre,0.0118,1.42
+brand,0.0104,1.25
+mileage,0.0099,1.19
+is_luxury_brand,0.0094,1.12
+km_per_year,0.0085,1.02
+seats,0.0061,0.73
