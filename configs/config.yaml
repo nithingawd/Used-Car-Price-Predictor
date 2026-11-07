@@ -156,6 +156,20 @@ prediction:
   # Number of factors shown in 'why this price'.
   explanation_factors: 5
 
+gui:
+  # Phase 7 Streamlit settings (D-032 to D-035).
+  age_slider_max: 20
+  km_step: 1000
+  whatif_km_max: 200000
+  whatif_km_step: 10000
+  batch_max_rows: 5000
+  batch_preview_rows: 20
+  scatter_max_points: 4000
+  brand_chart_top_n: 12
+  brand_chart_min_listings: 30
+  age_min_listings: 10
+  max_response_seconds: 2.0
+
 models:
   candidates:
     - "dummy"

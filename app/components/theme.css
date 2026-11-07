@@ -1,0 +1,211 @@
+/* Used Car Price Predictor: A7 design system.
+   Colours are the A7 palette only. Three type sizes: 44px (the estimate), 28px (page title,
+   metric values), 14px (everything else). Spacing on the 4px scale. */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  --cp-bg: #F7F5F0;
+  --cp-surface: #FFFFFF;
+  --cp-ink: #14213D;
+  --cp-muted: #6B7280;
+  --cp-teal: #0E7C7B;
+  --cp-amber: #F2A541;
+  --cp-border: #E3DED3;
+  --cp-positive: #2E7D32;
+  --cp-negative: #C0392B;
+  --cp-teal-tint: rgba(14, 124, 123, 0.08);
+  --cp-teal-ring: rgba(14, 124, 123, 0.18);
+
+  --cp-s1: 4px;  --cp-s2: 8px;  --cp-s3: 12px; --cp-s4: 16px;
+  --cp-s5: 24px; --cp-s6: 32px; --cp-s7: 48px;
+
+  --cp-fs-xl: 44px;
+  --cp-fs-lg: 28px;
+  --cp-fs-md: 14px;
+
+  --cp-radius: 12px;
+  --cp-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cp-font-display: "Fraunces", "DM Serif Display", Georgia, serif;
+  --cp-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --cp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---- Chrome: hide default menu, footer, decoration bar; keep top navigation ---------- */
+#MainMenu, footer, [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+[data-testid="stToolbarActions"], [data-testid="stMainMenu"], [data-testid="stAppDeployButton"] {
+  display: none !important;
+}
+header[data-testid="stHeader"] {
+  background: var(--cp-bg);
+  border-bottom: 1px solid var(--cp-border);
+}
+
+/* ---- Layout ------------------------------------------------------------------------- */
+.block-container, [data-testid="stMainBlockContainer"] {
+  max-width: 1200px;
+  padding-top: var(--cp-s7);
+  padding-bottom: var(--cp-s7);
+}
+html, body, [data-testid="stAppViewContainer"] {
+  font-family: var(--cp-font-ui);
+  font-size: var(--cp-fs-md);
+  color: var(--cp-ink);
+}
+[data-testid="stVerticalBlock"] { gap: var(--cp-s4); }
+
+/* ---- Typography --------------------------------------------------------------------- */
+.cp-title {
+  font-family: var(--cp-font-display);
+  font-size: var(--cp-fs-lg);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--cp-ink);
+  margin: 0 0 var(--cp-s2) 0;
+}
+.cp-lede { font-size: var(--cp-fs-md); color: var(--cp-ink); margin: 0; max-width: 72ch; }
+.cp-section {
+  font-size: var(--cp-fs-md);
+  font-weight: 600;
+  color: var(--cp-ink);
+  padding-bottom: var(--cp-s2);
+  margin: var(--cp-s2) 0 0 0;
+  border-bottom: 1px solid var(--cp-border);
+}
+.cp-caption { font-size: var(--cp-fs-md); color: var(--cp-muted); margin: 0; }
+.cp-mono { font-family: var(--cp-font-mono); font-variant-numeric: tabular-nums; }
+
+/* ---- Cards -------------------------------------------------------------------------- */
+.cp-card, [data-testid="stVerticalBlockBorderWrapper"]:has(> div > .cp-card-marker) {
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: var(--cp-radius);
+  padding: var(--cp-s5);
+}
+.cp-card { animation: cp-rise 320ms var(--cp-ease) both; }
+.cp-card + .cp-card { margin-top: var(--cp-s4); }
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+  border-radius: var(--cp-radius);
+  border-color: var(--cp-border) !important;
+  background: var(--cp-surface);
+}
+
+/* Metric card */
+.cp-metric-label { font-size: var(--cp-fs-md); font-weight: 500; color: var(--cp-ink); margin: 0; }
+.cp-metric-value {
+  font-family: var(--cp-font-mono);
+  font-size: var(--cp-fs-lg);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--cp-ink);
+  margin: var(--cp-s2) 0 var(--cp-s1) 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The estimate: the largest element on the page */
+.cp-estimate-label { font-size: var(--cp-fs-md); font-weight: 500; color: var(--cp-muted); margin: 0; }
+.cp-estimate {
+  font-family: var(--cp-font-mono);
+  font-size: var(--cp-fs-xl);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cp-ink);
+  margin: var(--cp-s2) 0 var(--cp-s1) 0;
+  font-variant-numeric: tabular-nums;
+  animation: cp-rise 420ms var(--cp-ease) both;
+}
+.cp-estimate-lakh { font-family: var(--cp-font-mono); font-size: var(--cp-fs-md); color: var(--cp-muted); }
+
+/* Notes */
+.cp-note {
+  border: 1px solid var(--cp-border);
+  border-left: 3px solid var(--cp-teal);
+  border-radius: var(--cp-s2);
+  background: var(--cp-surface);
+  padding: var(--cp-s3) var(--cp-s4);
+  font-size: var(--cp-fs-md);
+  color: var(--cp-ink);
+  animation: cp-rise 280ms var(--cp-ease) both;
+}
+.cp-note strong { font-weight: 600; }
+.cp-note-caution { border-left-color: var(--cp-negative); }
+.cp-note-caution strong { color: var(--cp-negative); }
+.cp-note-error { border-left-color: var(--cp-negative); }
+.cp-note ul { margin: var(--cp-s2) 0 0 0; padding-left: var(--cp-s5); }
+.cp-note li + li { margin-top: var(--cp-s1); }
+
+/* Stale-result badge */
+.cp-pill {
+  display: inline-block;
+  font-size: var(--cp-fs-md);
+  padding: var(--cp-s1) var(--cp-s3);
+  border-radius: 999px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-bg);
+  color: var(--cp-ink);
+}
+
+/* Empty state */
+.cp-empty { text-align: left; padding: var(--cp-s6) var(--cp-s5); }
+.cp-empty .cp-section { border: none; padding: 0; }
+
+/* ---- Widgets ------------------------------------------------------------------------ */
+.stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {
+  font-weight: 600;
+  border-radius: var(--cp-s2);
+  transition: transform 150ms var(--cp-ease), background-color 150ms var(--cp-ease),
+              border-color 150ms var(--cp-ease);
+}
+.stButton > button:hover, .stDownloadButton > button:hover { transform: translateY(-1px); }
+.stButton > button:active, .stDownloadButton > button:active { transform: translateY(0); }
+.stButton > button:focus-visible, .stDownloadButton > button:focus-visible {
+  outline: 2px solid var(--cp-teal);
+  outline-offset: 2px;
+}
+[data-baseweb="input"], [data-baseweb="select"] > div, [data-baseweb="textarea"] {
+  transition: box-shadow 150ms var(--cp-ease), border-color 150ms var(--cp-ease);
+}
+[data-baseweb="input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+  box-shadow: 0 0 0 3px var(--cp-teal-ring);
+}
+[data-testid="stWidgetLabel"] p { font-size: var(--cp-fs-md); font-weight: 500; }
+
+/* Tabs: teal underline that slides */
+[data-baseweb="tab-list"] { gap: var(--cp-s5); border-bottom: 1px solid var(--cp-border); }
+[data-baseweb="tab"] { font-size: var(--cp-fs-md); font-weight: 500; padding: var(--cp-s3) 0; }
+[data-baseweb="tab-highlight"] { background-color: var(--cp-teal); transition: all 220ms var(--cp-ease); }
+
+/* Charts and tables fade in */
+[data-testid="stPlotlyChart"], [data-testid="stDataFrame"], [data-testid="stImage"] {
+  animation: cp-fade 360ms var(--cp-ease) both;
+}
+
+/* ---- Motion ------------------------------------------------------------------------- */
+@keyframes cp-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cp-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---- Responsive: stack columns below 960px ------------------------------------------ */
+@media (max-width: 960px) {
+  [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: var(--cp-s4); }
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .block-container, [data-testid="stMainBlockContainer"] {
+    padding-left: var(--cp-s4);
+    padding-right: var(--cp-s4);
+  }
+}

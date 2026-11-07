@@ -139,6 +139,23 @@ class PredictionSettings:
 
 
 @dataclass(frozen=True)
+class GuiSettings:
+    """Phase 7 Streamlit app settings."""
+
+    age_slider_max: int
+    km_step: int
+    whatif_km_max: int
+    whatif_km_step: int
+    batch_max_rows: int
+    batch_preview_rows: int
+    scatter_max_points: int
+    brand_chart_top_n: int
+    brand_chart_min_listings: int
+    age_min_listings: int
+    max_response_seconds: float
+
+
+@dataclass(frozen=True)
 class ModelsSettings:
     """Model training, candidate algorithms, and tuning configurations."""
 
@@ -163,6 +180,7 @@ class AppConfig:
     feature_checks: FeatureCheckSettings
     evaluation: EvaluationSettings
     prediction: PredictionSettings
+    gui: GuiSettings
     models: ModelsSettings
 
 
@@ -236,6 +254,7 @@ def load_config(config_path: Path | str | None = None) -> AppConfig:
         feature_checks=FeatureCheckSettings(**data["feature_checks"]),
         evaluation=EvaluationSettings(**data["evaluation"]),
         prediction=PredictionSettings(**data["prediction"]),
+        gui=GuiSettings(**data["gui"]),
         models=ModelsSettings(**data["models"]),
     )
 

@@ -12,31 +12,26 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from carprice.palette import (  # noqa: F401  (re-exported for existing importers)
+    ACCENT_AMBER,
+    BG_COLOR,
+    BORDER_COLOR,
+    CATEGORICAL_PALETTE,
+    INK_COLOR,
+    MUTED_TEXT,
+    NEGATIVE_COLOR,
+    POSITIVE_COLOR,
+    PRIMARY_TEAL,
+    SEQUENTIAL_STOPS,
+    SURFACE_COLOR,
+)
+
 logger = logging.getLogger(__name__)
 
 
-# Strict Palette Constants from AGENTS.md Section A7
-BG_COLOR: str = "#F7F5F0"
-SURFACE_COLOR: str = "#FFFFFF"
-INK_COLOR: str = "#14213D"
-MUTED_TEXT: str = "#6B7280"
-PRIMARY_TEAL: str = "#0E7C7B"
-ACCENT_AMBER: str = "#F2A541"
-BORDER_COLOR: str = "#E3DED3"
-POSITIVE_COLOR: str = "#2E7D32"
-NEGATIVE_COLOR: str = "#C0392B"
-
-CATEGORICAL_PALETTE: list[str] = [
-    "#0E7C7B",  # Primary Teal
-    "#14213D",  # Dark Ink
-    "#F2A541",  # Amber Accent
-    "#7A9E9F",  # Soft Teal
-    "#B5651D",  # Ochre Brown
-    "#8D99AE",  # Muted Slate
-]
-
+# Palette constants live in carprice.palette (single source, A7); re-exported here.
 TEAL_SEQUENTIAL_CMAP: LinearSegmentedColormap = LinearSegmentedColormap.from_list(
-    "teal_sequential", ["#FFFFFF", "#0E7C7B"]
+    "teal_sequential", SEQUENTIAL_STOPS
 )
 
 

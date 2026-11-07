@@ -31,7 +31,7 @@ select = [
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["carprice"]
+known-first-party = ["carprice", "components"]
 force-sort-within-sections = true
 
 [tool.pytest.ini_options]
