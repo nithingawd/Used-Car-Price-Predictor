@@ -122,6 +122,16 @@ def run_module(module: str, *args: str) -> int:
     return run_command([py, "-c", code, *args])
 
 
+def eda() -> int:
+    """Phase 2: regenerate EDA figures and tables (the notebook holds the narrative)."""
+    py = str(PYTHON_EXE if PYTHON_EXE.exists() else sys.executable)
+    code = (
+        "import sys; sys.path.insert(0, 'src'); "
+        "from carprice.viz import run_eda_pipeline; run_eda_pipeline()"
+    )
+    return run_command([py, "-c", code])
+
+
 def split() -> int:
     """Phase 3: write the stratified train/test split and the measured feature checks."""
     return run_module("carprice.features")
@@ -153,6 +163,7 @@ def main() -> None:
             "setup",
             "clean",
             "clean-data",
+            "eda",
             "split",
             "train",
             "evaluate",
@@ -168,6 +179,7 @@ def main() -> None:
         "setup": setup,
         "clean": clean,
         "clean-data": clean_data,
+        "eda": eda,
         "split": split,
         "train": train,
         "evaluate": evaluate,

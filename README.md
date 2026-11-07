@@ -46,7 +46,11 @@ Valuing used cars accurately requires accounting for multifaceted vehicular attr
 ├── notebooks/                 # Narrative Jupyter notebooks for EDA and evaluation
 ├── src/carprice/              # Core reusable Python package
 │   ├── __init__.py
-│   └── config.py              # Strongly-typed frozen config dataclasses
+│   ├── config.py              # Strongly-typed frozen config dataclasses
+│   ├── data.py                # Load, validate, audit, clean (Phase 1)
+│   ├── viz.py                 # Shared plot style and EDA figures (Phase 2)
+│   ├── features.py            # Split, feature engineering, ColumnTransformer (Phase 3)
+│   └── train.py               # CV benchmark, Optuna tuning, final pipeline (Phase 4)
 ├── app/                       # Streamlit web application
 ├── models/                    # Saved pipeline artifacts (.joblib) and metadata JSON
 ├── reports/                   # Figures, summary tables, and final report
@@ -94,7 +98,32 @@ python tasks.py test
 python tasks.py lint
 ```
 
-### 4. Launch the Web Application
+### 4. Reproduce the Pipeline (Phases 1 to 4)
+
+Run these in order from the project root. Every step reads its settings from
+`configs/config.yaml` and uses the global seed, so re-running gives the same numbers.
+
+```bash
+# Phase 1: audit tables + cleaned data (data/interim/cars_clean.csv)
+python tasks.py clean-data
+
+# Phase 2: EDA figures and tables (narrative lives in notebooks/02_eda.ipynb)
+python tasks.py eda
+
+# Phase 3: stratified train/test split + measured feature checks
+python tasks.py split
+
+# Phase 4: CV benchmark, Optuna tuning, final pipeline, encoder comparison
+#          (writes models/*.joblib, models/model_card.json, reports/tables/*.csv)
+python tasks.py train
+```
+
+The saved `.joblib` pipelines are not committed to git, so a fresh clone must run
+`python tasks.py train` before the tests or the app can load the model. Run-time
+columns (`fit_time_sec`, `pred_time_sec`) and trial timestamps vary between machines;
+every score and parameter does not.
+
+### 5. Launch the Web Application
 
 ```bash
 python tasks.py app

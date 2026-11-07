@@ -1,0 +1,5 @@
+model_family,model_encoding,cv_log_rmse
+ridge_probe,onehot,0.1895
+ridge_probe,target,0.202
+xgboost_tuned,onehot,0.1673
+xgboost_tuned,target,0.1654

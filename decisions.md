@@ -169,6 +169,7 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Reason:** Empirical evidence shows automatic gearboxes command a statistically significant 2.74x premium ($p < 0.001$) across all power bands; engine displacement and power exhibit collinearity (VIF 6.41 and 4.56); and rare brands cause sparse high-dimensional one-hot matrices unless consolidated into structured market tiers.
 - **Evidence:** `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_24_interaction_power_transmission.png`, `reports/tables/eda_vif_summary.csv`, `reports/tables/eda_brand_medians.csv`.
 - **Impact / how to reverse:** Implemented as a leak-free scikit-learn transformer in `src/carprice/features.py` during Phase 3.
+- **Revision (2026-11-08, see D-021):** these were *proposals*. Phase 3 screening (D-013) decided the final set. `power_x_automatic` was measured and rejected (ΔRMSE 0.0000). `brand_tier` was never added to the pipeline; brand information reaches the model through one-hot `brand` (rare levels grouped, D-015) and the `is_luxury_brand` flag.
 
 ---
 
@@ -197,24 +198,26 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Decision:** Adopt option (b) with global seed 42.
 - **Reason:** Stratifying on 5 price quintiles guarantees that budget cars, mainstream commuters, and rare ultra-luxury supercars are equally represented across both train and test partitions within $< 2\%$ deviation. The test set is written to `data/processed/test.csv` and indices to `split_indices.json`, remaining completely locked from all Phase 3 and Phase 4 model training and feature fitting code.
 - **Evidence:** `data/processed/split_indices.json`, `tests/test_features.py` test `test_split_shapes_and_disjoint`.
-- **Impact / how to reverse:** Configured in `configs/config.yaml` (`splitting.test_size: 0.2`, `project.random_seed: 42`) and managed by `create_train_test_split()`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` (`splitting.test_size: 0.2`, `splitting.stratify_by: selling_price`, `splitting.stratify_bins: 5`, `project.random_seed: 42`) and managed by `create_train_test_split()`. Re-running `python tasks.py split` reproduces `split_indices.json` byte-for-byte (verified 2026-11-08, D-021).
 
 ---
 
 ### D-013: Candidate Feature Engineering Evaluations and Selection Decisions
 
-- **Date / Phase:** 2026-11-07 / Phase 3
-- **Context:** EDA proposed candidate domain features. Each candidate was independently evaluated via 5-fold cross-validation on `train.csv` only against a baseline Ridge regression model (Baseline CV RMSE: 0.2020):
-  - *Candidate 1 (`km_per_year`):* $\text{km\_driven} / \max(\text{vehicle\_age}, 1)$ $\rightarrow$ RMSE: 0.2018 ($\Delta = -0.0002$) $\rightarrow$ **KEEP**.
-  - *Candidate 2 (`power_per_litre`):* $\text{max\_power} / (\text{engine} / 1000)$ $\rightarrow$ RMSE: 0.2016 ($\Delta = -0.0005$) $\rightarrow$ **KEEP**.
-  - *Candidate 3 (`log_km_driven`):* $\log(1 + \text{km\_driven})$ $\rightarrow$ RMSE: 0.2025 ($\Delta = +0.0004$) $\rightarrow$ **REJECT**. Degrades linear scores when km is already capped at 500,000 km.
-  - *Candidate 4 (`is_luxury_brand`):* Binary indicator for luxury/ultra-luxury marques $\rightarrow$ RMSE: 0.2014 ($\Delta = -0.0006$) $\rightarrow$ **KEEP**.
-  - *Candidate 5 (`age_x_power`):* Interaction between vehicle age and engine power $\rightarrow$ RMSE: 0.1925 ($\Delta = -0.0095$) $\rightarrow$ **KEEP**. Substantially benefits linear baselines by capturing accelerated power depreciation.
-  - *Combined Kept Features:* Drops overall Ridge CV RMSE from 0.2020 down to **0.1910** ($\Delta = -0.0110$).
-- **Decision:** Retain `km_per_year`, `power_per_litre`, `is_luxury_brand`, and `age_x_power`; reject `log_km_driven`.
-- **Reason:** Every retained feature demonstrably improves cross-validation accuracy on the training partition and reflects physical domain validity.
-- **Evidence:** `reports/tables/feature_checks.csv`.
-- **Impact / how to reverse:** Implemented in `DomainFeatureEngineer` inside `src/carprice/features.py`.
+- **Date / Phase:** 2026-11-07 / Phase 3 (numbers corrected 2026-11-08, see D-021)
+- **Context:** EDA proposed candidate domain features (D-010). Each candidate was added to a scaled Ridge probe (`build_ridge_probe()`, alpha from `feature_checks.probe_ridge_alpha`) and scored by 5-fold CV log RMSE on `train.csv` only. Baseline CV RMSE without any candidate: **0.2020**.
+  - *`km_per_year`:* $	ext{km\_driven} / \max(	ext{vehicle\_age}, 1)$ → 0.2018 (Δ −0.0002) → **KEEP**.
+  - *`power_per_litre`:* $	ext{max\_power} / (	ext{engine} / 1000)$ → 0.2016 (Δ −0.0005) → **KEEP**.
+  - *`log_km_driven`* (replacing raw `km_driven`) → 0.2025 (Δ +0.0004) → **REJECT**. km is already capped at 500,000 (D-004), so the log adds nothing for a linear model.
+  - *`is_luxury_brand`:* binary flag for the marques in `features.luxury_brands` → 0.2009 (Δ −0.0011) → **KEEP**.
+  - *`age_x_power`:* vehicle age × max power → 0.1925 (Δ −0.0095) → **KEEP**. Lets a linear model capture faster depreciation of powerful cars.
+  - *`power_x_automatic`:* max power × automatic flag → 0.2021 (Δ 0.0000) → **REJECT**. The automatic premium (D-010) is already captured by one-hot `transmission_type`.
+  - *All four kept features together:* **0.1903** (Δ −0.0117), the same value as the Ridge row in `cv_results.csv`.
+- **Decision rule:** keep a candidate only if it lowers CV log RMSE by at least `feature_checks.min_rmse_gain` (0.0001).
+- **Decision:** Retain `km_per_year`, `power_per_litre`, `is_luxury_brand`, `age_x_power`; reject `log_km_driven` and `power_x_automatic`.
+- **Reason:** Every retained feature measurably improves CV accuracy on the training partition and has a physical interpretation. The gains for three of the four are small (≤ 0.0011); `age_x_power` carries most of the benefit.
+- **Evidence:** `reports/tables/feature_checks.csv` (generated by `evaluate_feature_candidates()`); `tests/test_features.py::test_saved_feature_checks_match_pipeline_features` asserts that the KEEP rows equal the pipeline's engineered features.
+- **Impact / how to reverse:** Implemented in `DomainFeatureEngineer` inside `src/carprice/features.py`; re-run with `python tasks.py split`.
 
 ---
 
@@ -232,18 +235,20 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
-### D-015: Brand-Tier Mapping and Equity Hierarchy
+### D-015: Rare-Brand Handling and the Brand-Tier Mapping
 
-- **Date / Phase:** 2026-11-07 / Phase 3
+- **Date / Phase:** 2026-11-07 / Phase 3 (corrected 2026-11-08, see D-021)
 - **Context:** The cleaned dataset features 31 automotive brands, 14 of which have $< 30$ listings.
 - **Options considered:**
-  - (a) Rely entirely on unregularized one-hot dummy variables.
-  - (b) Group all rare brands under a generic "Other" category.
-  - (c) Establish an auditable 5-tier brand hierarchy (`Budget`, `Mid`, `Premium`, `Luxury`, `Ultra-Luxury`) in `configs/config.yaml` combined with a `RareCategoryEncoder(min_frequency=20)`.
-- **Decision:** Adopt option (c).
-- **Reason:** Phase 2 EDA confirmed that brand medians stratify into well-defined valuation bands. Grouping infrequent brands into tiers preserves high-level equity context without creating high-variance sparse columns.
-- **Evidence:** `configs/config.yaml`, `reports/tables/eda_brand_medians.csv`, `reports/tables/eda_rare_brands.csv`.
-- **Impact / how to reverse:** Configured in `configs/config.yaml` under `features.brand_tier_mapping` and `features.luxury_brands`.
+  - (a) Unregularized one-hot dummies for every brand.
+  - (b) Group rare brands into a generic "Other" level, learned per training fold.
+  - (c) Replace brand with a hand-built 5-tier hierarchy (`Budget` … `Ultra-Luxury`).
+- **Decision:** Option (b): `RareCategoryEncoder(min_frequency=20)` followed by one-hot encoding, plus the binary `is_luxury_brand` flag from D-013. The 5-tier `features.brand_tier_mapping` in `config.yaml` is **not** an input to the model; it is kept only as a reference grouping for reporting and the GUI.
+- **Correction:** the original entry stated that option (c) was adopted. The code never used the tier mapping, so the entry was wrong, not the model.
+- **Two thresholds, two purposes:** `eda.rare_brand_report_threshold: 30` is the descriptive cut-off used to list rare brands in `eda_rare_brands.csv` (Phase 2). `features.rare_category_min_frequency: 20` is the modelling threshold, applied inside each training fold so that no test rows influence which brands are kept.
+- **Reason:** Fold-wise grouping avoids sparse, high-variance dummy columns while staying leak-free. A tier mapping derived from full-dataset brand medians would have let test-set prices shape a feature, which is why it is not used for modelling.
+- **Evidence:** `configs/config.yaml`, `src/carprice/features.py::build_preprocessor`, `reports/tables/eda_brand_medians.csv`, `reports/tables/eda_rare_brands.csv`.
+- **Impact / how to reverse:** Change `features.rare_category_min_frequency` and re-run `python tasks.py train`.
 
 ---
 
@@ -265,14 +270,14 @@ This log records every non-trivial design, modeling, cleaning, and architectural
   10. `lightgbm`: Leaf-wise gradient tree boosting optimized for speed and tabular accuracy.
 - **Reason:** Establishes an academically rigorous benchmark across inductive biases, proving whether complex non-linear tree ensembles justify added computational cost over regularized linear baselines.
 - **Evidence:** `reports/tables/model_candidates.csv`, `reports/tables/cv_results.csv`, `reports/figures/model_cv_comparison.png`.
-- **Impact / how to reverse:** Configured in `configs/config.yaml` under `models.candidates`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` under `models.candidates`; untuned settings for each model are in `models.candidate_params`.
 
 ---
 
 ### D-017: Target Transformation Architecture (TransformedTargetRegressor)
 
 - **Date / Phase:** 2026-11-08 / Phase 4
-- **Context:** Car selling prices exhibit extreme right-skewness (skewness = 10.05 raw vs 0.57 on log1p scale) and heteroscedastic error dispersion.
+- **Context:** Car selling prices exhibit extreme right-skewness and heteroscedastic error dispersion. On the cleaned data used for EDA and modelling the skewness is 10.11, falling to 0.56 on the log1p scale (D-009, `reports/figures/eda_01_selling_price_raw_vs_log.png`). The raw 15,411-row file gives 10.05 and 0.57; the small difference comes from the 167 duplicates removed in D-003.
 - **Options considered:**
   - (a) Direct regression on raw rupee prices with MSE loss (causes extreme gradient instability on luxury supercars).
   - (b) Ad-hoc manual target logging before training and manual expm1 inverse transformation at inference.
@@ -295,7 +300,7 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Decision:** Adopt option (c) across the top candidate models (`xgboost`, `lightgbm`, `hist_gradient_boosting`).
 - **Reason:** TPE explores complex non-linear parameter interactions far more efficiently than random guessing. Precomputing fold transforms ($X_{tr, k}, X_{val, k}$) strictly on each training fold once reduces tuning latency by $> 85\%$ while remaining 100% leak-free and mathematically identical to in-loop pipeline fits.
 - **Evidence:** `reports/tables/tuning_trials_*.csv`, `models/best_params.json`, `reports/figures/tuning_history.png`, `reports/figures/tuning_param_importances.png`.
-- **Impact / how to reverse:** Configured in `configs/config.yaml` (`models.tuning_trials: 35`).
+- **Impact / how to reverse:** Configured in `configs/config.yaml` (`models.tuning_trials: 35`, `models.timeout_seconds`, and the per-model ranges under `models.search_spaces`). Key order in each search space is the order Optuna suggests parameters, so it must not be re-sorted if trials are to be reproduced.
 
 ---
 
@@ -327,7 +332,24 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-022: Pre-Split Steps That Use the Whole Dataset (Leakage Risk Assessment)
+
+- **Date / Phase:** 2026-11-08 / Phase 4 review
+- **Context:** A4 forbids computing statistics on the full dataset before splitting. Three earlier choices touch the full dataset, so each was checked.
+- **Findings:**
+  1. *Seat imputation (D-006):* the brand/model modal seat count is computed on all 15,244 rows before the split. It affects 2 rows, uses no price information, and the imputed value (5) is a published manufacturer spec for both cars. **Risk: negligible.** Left as is.
+  2. *Brand-tier mapping (D-010/D-015):* derived from full-dataset brand median prices, so it **would** leak test prices, but it is not used by the model pipeline (D-015 correction). **Risk: none for the model**; reporting/GUI only.
+  3. *`luxury_brands` list (D-013):* a fixed list of marques chosen from domain knowledge (premium European/Japanese luxury makers). It is not fitted from prices. **Risk: low.** One could argue the EDA price ranking informed the list; this is noted for the viva.
+  4. *Everything fitted from data inside the model* (imputer, scaler, rare-category grouping, one-hot, TargetEncoder) sits inside the Pipeline and is fitted per training fold. `load_training_data()` refuses to read `test.csv`, and `tests/test_train.py::test_train_module_never_reads_test_csv` checks it.
+- **Decision:** No change to the trained model. Findings recorded here for transparency.
+- **Evidence:** `src/carprice/data.py::fix_invalid_seats`, `src/carprice/features.py`, `configs/config.yaml`.
+- **Impact / how to reverse:** To remove finding 1 entirely, move seat imputation into the Pipeline as a fitted transformer and retrain; expected effect on metrics is nil (2 rows).
+
+---
+
 ## Open questions for the student
 
-- None currently for Phase 0.
+1. **Encoder choice depends on the model family (D-014).** For the Ridge probe one-hot encoding of `model` beats TargetEncoder; for the tuned XGBoost winner TargetEncoder wins (see `reports/tables/encoder_comparison.csv`). The production pipeline keeps TargetEncoder because the deployed model is XGBoost. Do you want the linear baseline (`baseline_ridge.joblib`) switched to one-hot so the Ridge comparison in Phase 5 is fairer? This would change Ridge's numbers but not the final model.
+2. **Brand-tier mapping (D-015).** It is now documented as reporting-only. Keep it for the GUI's Market Explorer, or delete it from `config.yaml`?
+3. **Seat imputation before the split (D-022, finding 1).** Accept as negligible, or move it into the Pipeline for strict compliance with A4?
 
