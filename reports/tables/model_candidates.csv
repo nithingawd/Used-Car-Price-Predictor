@@ -1,0 +1,12 @@
+model_id,model_name,family,scaling_required,preprocessor_kind,justification
+dummy,DummyRegressor,Baseline,False,tree,Non-parametric baseline using training median of log price; any serious model must beat this.
+linear_regression,LinearRegression,Linear,True,linear,Ordinary least squares establishing the base linear relationship across scaled and encoded features.
+ridge,Ridge,Linear,True,linear,L2-regularized linear model that penalizes large weights to mitigate multicollinearity.
+lasso,Lasso,Linear,True,linear,L1-regularized linear model providing automatic feature selection by driving non-informative coefficients to zero.
+k_nearest_neighbors,KNeighborsRegressor,Instance-based,True,linear,Non-parametric instance contrast baseline modeling local price similarity neighborhoods.
+decision_tree,DecisionTreeRegressor,Tree,False,tree,Single interpretable decision tree demonstrating recursive partitioning and susceptibility to high variance.
+random_forest,RandomForestRegressor,Bagging Ensemble,False,tree,Bagging ensemble of decorrelated decision trees that reduces variance and handles nonlinear interactions.
+hist_gradient_boosting,HistGradientBoostingRegressor,Boosting Ensemble,False,tree,Fast scikit-learn native histogram-binned gradient booster optimized for tabular data.
+xgboost,XGBRegressor,Boosting Ensemble,False,tree,State-of-the-art second-order gradient tree booster with explicit L1 and L2 tree regularization.
+lightgbm,LGBMRegressor,Boosting Ensemble,False,tree,High-efficiency leaf-wise gradient boosting optimized for rapid training and top tabular accuracy.
+

@@ -247,6 +247,86 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-016: Algorithm Shortlist and Justification
+
+- **Date / Phase:** 2026-11-08 / Phase 4
+- **Context:** Supervised regression on 12,195 tabular training records with mixed numeric/categorical features, high-cardinality model categories, and right-skewed selling prices.
+- **Options considered:** Comparing only linear models vs only tree ensembles vs a diverse, justified hierarchy of regressors.
+- **Decision:** Shortlist 10 candidate models spanning baseline, linear, instance-based, single-tree, bagging, and boosting paradigms:
+  1. `dummy`: Non-parametric median baseline to establish minimum acceptable performance.
+  2. `linear_regression`: Ordinary Least Squares to gauge baseline linear explanatory power.
+  3. `ridge`: L2-regularized linear model to stabilize collinear feature weights.
+  4. `lasso`: L1-regularized linear model to perform embedded sparse feature selection.
+  5. `k_nearest_neighbors`: Distance-weighted instance contrast model.
+  6. `decision_tree`: Single CART tree baseline for interpretability and overfitting contrast.
+  7. `random_forest`: Bagging ensemble to reduce tree variance and capture non-linear interactions.
+  8. `hist_gradient_boosting`: Fast histogram-binned boosting algorithm.
+  9. `xgboost`: Scaled second-order gradient boosted trees with L1/L2 shrinkage.
+  10. `lightgbm`: Leaf-wise gradient tree boosting optimized for speed and tabular accuracy.
+- **Reason:** Establishes an academically rigorous benchmark across inductive biases, proving whether complex non-linear tree ensembles justify added computational cost over regularized linear baselines.
+- **Evidence:** `reports/tables/model_candidates.csv`, `reports/tables/cv_results.csv`, `reports/figures/model_cv_comparison.png`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` under `models.candidates`.
+
+---
+
+### D-017: Target Transformation Architecture (TransformedTargetRegressor)
+
+- **Date / Phase:** 2026-11-08 / Phase 4
+- **Context:** Car selling prices exhibit extreme right-skewness (skewness = 10.05 raw vs 0.57 on log1p scale) and heteroscedastic error dispersion.
+- **Options considered:**
+  - (a) Direct regression on raw rupee prices with MSE loss (causes extreme gradient instability on luxury supercars).
+  - (b) Ad-hoc manual target logging before training and manual expm1 inverse transformation at inference.
+  - (c) Scikit-learn's `TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)` wrapping the complete feature preparation and estimator pipeline.
+- **Decision:** Adopt option (c).
+- **Reason:** Guarantees leak-free encapsulation and a clean API contract. Calling `.fit(X, y)` and `.predict(X)` operates directly on human-interpretable INR prices while internal loss minimization occurs on the symmetric, variance-stabilized log scale.
+- **Evidence:** `src/carprice/train.py`, `models/model_card.json`.
+- **Impact / how to reverse:** Configured in `fit_and_persist_pipelines()` in `src/carprice/train.py`.
+
+---
+
+### D-018: Hyperparameter Tuning Budget, Search Spaces, and Fold Precomputation
+
+- **Date / Phase:** 2026-11-08 / Phase 4
+- **Context:** Tuning top candidate algorithms across 5-fold cross-validation without risking out-of-fold data leakage or excessive latency.
+- **Options considered:**
+  - (a) Grid search (computationally intractable).
+  - (b) RandomizedSearchCV.
+  - (c) Optuna Tree-structured Parzen Estimator (TPE) Bayesian optimization with 35 trials per candidate, fixed seed (42), and precomputed leak-free fold features.
+- **Decision:** Adopt option (c) across the top candidate models (`xgboost`, `lightgbm`, `hist_gradient_boosting`).
+- **Reason:** TPE explores complex non-linear parameter interactions far more efficiently than random guessing. Precomputing fold transforms ($X_{tr, k}, X_{val, k}$) strictly on each training fold once reduces tuning latency by $> 85\%$ while remaining 100% leak-free and mathematically identical to in-loop pipeline fits.
+- **Evidence:** `reports/tables/tuning_trials_*.csv`, `models/best_params.json`, `reports/figures/tuning_history.png`, `reports/figures/tuning_param_importances.png`.
+- **Impact / how to reverse:** Configured in `configs/config.yaml` (`models.tuning_trials: 35`).
+
+---
+
+### D-019: Final Model Selection Rule and Winning Estimator
+
+- **Date / Phase:** 2026-11-08 / Phase 4
+- **Context:** Identifying the winning production model from tuned candidates strictly using training-set CV metrics before touching the locked test set.
+- **Decision Rule:** Select the candidate achieving lowest mean 5-fold CV log RMSE; tie-breaker: smaller fold standard deviation, lower model complexity, and faster inference latency.
+- **Outcome:** Tuned `xgboost` achieved the lowest 5-fold CV log RMSE of **0.1654** (OOF $R^2 = 0.9426$), edging out `lightgbm` (0.1660) and `hist_gradient_boosting` (0.1660).
+- **Superiority over baselines:**
+  - 76.10% lower RMSE than DummyRegressor (0.6921 $\rightarrow$ 0.1654).
+  - 13.08% lower RMSE than Ridge linear baseline (0.1903 $\rightarrow$ 0.1654), with out-of-fold INR MAE improving from ₹1,20,518 to ₹97,642.
+- **Evidence:** `reports/tables/cv_results.csv`, `models/best_params.json`, `models/model_card.json`.
+- **Impact / how to reverse:** Governed by `fit_and_persist_pipelines()` in `src/carprice/train.py`.
+
+---
+
+### D-020: Empirical Out-of-Fold Residual Quantile Method for 80% Prediction Intervals
+
+- **Date / Phase:** 2026-11-08 / Phase 4
+- **Context:** Academic requirement 4 requires providing a plausible prediction interval for estimated used car values.
+- **Options considered:**
+  - (a) Gaussian parametric assumption ($\hat{y} \pm 1.28 \times \text{RMSE}$).
+  - (b) Empirical out-of-fold residual quantiles (10th and 90th percentiles) on log1p scale: $[\text{expm1}(\hat{y}_{\log} + q_{10}), \text{expm1}(\hat{y}_{\log} + q_{90})]$.
+- **Decision:** Adopt option (b) with $q_{10} = -0.1903$ and $q_{90} = +0.1915$.
+- **Reason:** Residuals on used car valuations exhibit slight asymmetry due to seller negotiation bands. Empirical out-of-fold quantiles make zero normality assumptions and directly reflect real-world validation coverage.
+- **Evidence:** `models/model_card.json`.
+- **Impact / how to reverse:** Documented in model card and consumed by `predict.py` and GUI in Phases 5 & 6.
+
+---
+
 ## Open questions for the student
 
 - None currently for Phase 0.

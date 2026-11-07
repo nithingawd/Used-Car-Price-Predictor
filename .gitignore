@@ -26,6 +26,7 @@ data/processed/*
 # Testing and linting caches
 .pytest_cache/
 .ruff_cache/
+*.egg-info/
 
 # OS generated files
 Thumbs.db

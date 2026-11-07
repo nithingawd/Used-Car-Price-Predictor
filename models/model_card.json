@@ -1,0 +1,47 @@
+{
+  "model_name": "xgboost (Tuned)",
+  "model_architecture": "TransformedTargetRegressor(Pipeline[DomainFeatureEngineer, ColumnTransformer, xgboost])",
+  "timestamp_utc": "2026-11-07T18:27:22.875093+00:00",
+  "git_commit": "38aa9b8",
+  "training_sample_count": 12195,
+  "target_transform": "log1p(selling_price) -> expm1",
+  "best_hyperparameters": {
+    "n_estimators": 200,
+    "max_depth": 6,
+    "learning_rate": 0.05005929084334886,
+    "min_child_weight": 3,
+    "subsample": 0.8637758231262079,
+    "colsample_bytree": 0.6753243505843239,
+    "reg_alpha": 0.0044889243938206575,
+    "reg_lambda": 0.003394933642590343
+  },
+  "cross_validation": {
+    "n_splits": 5,
+    "random_seed": 42,
+    "oof_log_rmse": 0.1654,
+    "oof_log_mae": 0.1226,
+    "oof_r2": 0.9426,
+    "improvement_vs_dummy_pct": 76.1,
+    "improvement_vs_ridge_pct": 13.06
+  },
+  "prediction_interval_80pct": {
+    "method": "Empirical out-of-fold log residual quantiles",
+    "residual_quantile_10": -0.1903,
+    "residual_quantile_90": 0.1915,
+    "formula": "[expm1(log_pred + q10), expm1(log_pred + q90)]"
+  },
+  "input_features": [
+    "brand",
+    "model",
+    "vehicle_age",
+    "km_driven",
+    "seller_type",
+    "fuel_type",
+    "transmission_type",
+    "mileage",
+    "engine",
+    "max_power",
+    "seats",
+    "km_was_capped"
+  ]
+}

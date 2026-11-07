@@ -83,11 +83,16 @@ features:
 
 models:
   candidates:
+    - "dummy"
     - "linear_regression"
     - "ridge"
+    - "lasso"
+    - "k_nearest_neighbors"
+    - "decision_tree"
     - "random_forest"
+    - "hist_gradient_boosting"
     - "xgboost"
     - "lightgbm"
-  tuning_trials: 50
+  tuning_trials: 35
   timeout_seconds: 3600
 
