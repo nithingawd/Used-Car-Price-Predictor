@@ -579,6 +579,48 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+### D-036: Dark Mode for the GUI
+
+- **Date / Phase:** 2026-11-08 / Phase 7 (student request)
+- **Context:** A7 defines only a light palette. The student asked for a dark mode.
+- **Options considered:** (a) a custom in-app toggle that injects dark CSS, (b) a custom toggle that writes Streamlit's stored theme and reloads the page, (c) Streamlit's native `[theme.light]` / `[theme.dark]` themes with its built-in System / Light / Dark picker.
+- **Decision:** (c). The app follows the visitor's system setting by default. The ⋮ menu (top right) now offers System / Light / Dark: `client.toolbarMode` changed from `minimal` to `viewer`, and the menu is no longer hidden in `theme.css`.
+- **Reason:** (a) cannot restyle the canvas-drawn `st.dataframe`, so tables would stay light. (b) depends on Streamlit internals and the reload wipes the form. (c) is supported, keeps the session, and switches every element instantly without a rerun.
+- **How each layer follows the theme:**
+  - Native widgets and tables use the two config sections.
+  - Custom cards and notes use CSS `light-dark()` tokens. They resolve against the `color-scheme` Streamlit sets on the app; browsers without `light-dark()` keep the light values.
+  - Plotly charts are drawn with colour placeholders `#000001` to `#000010`. In the browser, Streamlit swaps these for the active theme's `chartCategoricalColors`. That list has ten role slots: six A7 series, then muted, border, grid and surface.
+- **Dark palette (derived from A7, in `src/carprice/palette.py`):**
+
+  | Role | Value |
+  |---|---|
+  | Page | `#0F1626` |
+  | Cards | `#18233A` |
+  | Text | `#EEEAE1` |
+  | Muted text | `#A4ACBA` |
+  | Lines, links, selected text | `#3FB1AF` (brightened teal) |
+  | Borders | `#2C3852` |
+  | Gridlines | `#243049` |
+  | Positive | `#5DBB63` |
+  | Negative | `#E8695B` |
+  | Ochre series | `#D08A45` |
+
+  - Amber, soft teal and slate are unchanged. The ink series flips to the light text colour.
+  - Buttons keep brand teal `#0E7C7B` (white text 5.0:1).
+  - Brand teal is only 3.6:1 as text on navy. Selected tabs, toggles and slider values therefore use the brightened teal via CSS.
+  - All dark text tokens are at least 4.5:1 and chart series at least 3:1 (WCAG 1.4.11), enforced by `tests/test_theme.py`.
+  - The dark sequential ramp is a linear blend from card to teal, built the same way as the light ramp.
+- **Related fixes needed for dark mode:**
+  - In Streamlit 1.67 the old `stVerticalBlockBorderWrapper` selector matched nothing, so cards had no surface colour in either theme. Bordered containers now come from `ui.panel(name)`, keyed `card-<name>`, and CSS targets `[class*="st-key-card-"]`.
+  - The what-if caption said "the dark dot", which is wrong in dark mode. It now says "the ringed dot".
+  - The static SHAP PNG stays light and sits on a white frame.
+- **Light mode:** unchanged. `[theme.light]` holds the exact A7 values; a test checks this.
+- **Evidence:** `.streamlit/config.toml`, `app/components/theme.css`, `app/components/palette.py`, `tests/test_theme.py`. `scripts/capture_screenshots.py` now also saves `gui_*_dark.png`.
+- **How to reverse:** delete `[theme.dark]` and add `base = "light"` under `[theme]`.
+
+---
+
 ## Open questions for the student
 
 1. **Predictor timing under a throttled CPU (D-031).** On battery in the Windows Silent power plan the measurement varies widely. The latest run's fastest process passed (load 0.474 s, single-prediction median 27.2 ms) but its slowest failed (2.107 s, 154.5 ms). Please re-run `python tasks.py predict` on mains power so `predictor_timing.csv` reflects normal conditions.
+2. **Dark-mode screenshots.** Dark-mode screenshots for the report (`gui_*_dark.png`) have not been regenerated. Run `scripts/capture_screenshots.py` with the app running if you want them in the report; the script now also captures dark versions.

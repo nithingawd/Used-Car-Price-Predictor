@@ -1,5 +1,22 @@
 [theme]
-base = "light"
+# Shared by both modes. No `base`: with [theme.light] and [theme.dark] defined, the app
+# follows the visitor's system setting and offers Light / Dark / System (D-036).
+showWidgetBorder = true
+baseRadius = "8px"
+buttonRadius = "8px"
+baseFontSize = 14
+# A7 typography: Inter for UI, Fraunces for headings, JetBrains Mono for numbers.
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+headingFont = "Fraunces:https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap, serif"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap, monospace"
+
+# Chart colour slots (both modes, same order, app/components/palette.py):
+# 1-6 the A7 categorical series (2 = ink, also the text colour), 7 muted text, 8 border,
+# 9 gridlines, 10 card surface. Source of truth: src/carprice/palette.py *_CHART_SLOTS.
+# Streamlit swaps these into Plotly figures in the browser, so charts follow the theme.
+
+[theme.light]
+# The A7 palette, unchanged.
 primaryColor = "#0E7C7B"
 backgroundColor = "#F7F5F0"
 secondaryBackgroundColor = "#FFFFFF"
@@ -10,21 +27,29 @@ greenColor = "#2E7D32"
 borderColor = "#E3DED3"
 dataframeBorderColor = "#E3DED3"
 dataframeHeaderBackgroundColor = "#F7F5F0"
-showWidgetBorder = true
-baseRadius = "8px"
-buttonRadius = "8px"
-baseFontSize = 14
-# A7 typography: Inter for UI, Fraunces for headings, JetBrains Mono for numbers.
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
-headingFont = "Fraunces:https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap, serif"
-codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap, monospace"
-chartCategoricalColors = ["#0E7C7B", "#14213D", "#F2A541", "#7A9E9F", "#B5651D", "#8D99AE"]
-chartSequentialColors = ["#FFFFFF", "#E4F0F0", "#C9E2E2", "#AFD3D3", "#94C5C4", "#79B6B6", "#5EA8A7", "#449998", "#298B8A", "#0E7C7B"]
+chartCategoricalColors = ["#0E7C7B", "#14213D", "#F2A541", "#7A9E9F", "#B5651D", "#8D99AE", "#6B7280", "#E3DED3", "#ECE8E0", "#FFFFFF"]
+chartSequentialColors = ["#18233A", "#1C3347", "#214354", "#255261", "#29626E", "#2E727B", "#328288", "#369195", "#3BA1A2", "#3FB1AF"]
+
+[theme.dark]
+# Dark counterpart of A7 (D-036): ink-navy page, warm off-white text, brightened teal for
+# lines and links. Buttons keep brand teal #0E7C7B (white text 5.0:1).
+primaryColor = "#0E7C7B"
+backgroundColor = "#0F1626"
+secondaryBackgroundColor = "#18233A"
+textColor = "#EEEAE1"
+linkColor = "#3FB1AF"
+redColor = "#E8695B"
+greenColor = "#5DBB63"
+borderColor = "#2C3852"
+dataframeBorderColor = "#2C3852"
+dataframeHeaderBackgroundColor = "#0F1626"
+chartCategoricalColors = ["#3FB1AF", "#EEEAE1", "#F2A541", "#7A9E9F", "#D08A45", "#8D99AE", "#A4ACBA", "#2C3852", "#243049", "#18233A"]
+chartSequentialColors = ["#18233A", "#1A3043", "#1C3D4D", "#1F4A56", "#225760", "#256469", "#287173", "#2B7E7C", "#3197A5", "#3FB1AF"]
 
 [client]
 # Never show Python tracebacks to users; details go to the server console only.
 showErrorDetails = "none"
-toolbarMode = "minimal"
+toolbarMode = "viewer"
 showSidebarNavigation = false
 
 [browser]

@@ -31,9 +31,33 @@
   --cp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* ---- Chrome: hide default menu, footer, decoration bar; keep top navigation ---------- */
-#MainMenu, footer, [data-testid="stDecoration"], [data-testid="stStatusWidget"],
-[data-testid="stToolbarActions"], [data-testid="stMainMenu"], [data-testid="stAppDeployButton"] {
+/* ---- Dark mode (D-036) --------------------------------------------------------------
+   Streamlit sets `color-scheme` on the app container to match the active theme (System,
+   Light or Dark in the toolbar menu). light-dark() resolves against it on each element,
+   so these cards switch instantly with the native widgets, with no rerun. Browsers without
+   light-dark() keep the light values above. Values mirror [theme.dark] in config.toml. */
+@supports (color: light-dark(#000, #fff)) {
+  :root {
+    --cp-bg: light-dark(#F7F5F0, #0F1626);
+    --cp-surface: light-dark(#FFFFFF, #18233A);
+    --cp-ink: light-dark(#14213D, #EEEAE1);
+    --cp-muted: light-dark(#6B7280, #A4ACBA);
+    --cp-teal: light-dark(#0E7C7B, #3FB1AF);
+    --cp-border: light-dark(#E3DED3, #2C3852);
+    --cp-positive: light-dark(#2E7D32, #5DBB63);
+    --cp-negative: light-dark(#C0392B, #E8695B);
+    --cp-teal-tint: light-dark(rgba(14, 124, 123, 0.08), rgba(63, 177, 175, 0.12));
+    --cp-teal-ring: light-dark(rgba(14, 124, 123, 0.18), rgba(63, 177, 175, 0.30));
+  }
+}
+
+/* The static SHAP report figure is a light PNG; frame it as a light panel in dark mode. */
+[data-testid="stImage"] img { border-radius: var(--cp-s2); background: #FFFFFF; }
+
+/* ---- Chrome: hide footer, decoration bar, status; keep top navigation and the ⋮ menu,
+   whose first row is the System / Light / Dark theme picker (D-036) ------------------- */
+footer, [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+[data-testid="stToolbarActions"], [data-testid="stAppDeployButton"] {
   display: none !important;
 }
 header[data-testid="stHeader"] {
@@ -77,7 +101,7 @@ html, body, [data-testid="stAppViewContainer"] {
 .cp-mono { font-family: var(--cp-font-mono); font-variant-numeric: tabular-nums; }
 
 /* ---- Cards -------------------------------------------------------------------------- */
-.cp-card, [data-testid="stVerticalBlockBorderWrapper"]:has(> div > .cp-card-marker) {
+.cp-card {
   background: var(--cp-surface);
   border: 1px solid var(--cp-border);
   border-radius: var(--cp-radius);
@@ -86,7 +110,8 @@ html, body, [data-testid="stAppViewContainer"] {
 .cp-card { animation: cp-rise 320ms var(--cp-ease) both; }
 .cp-card + .cp-card { margin-top: var(--cp-s4); }
 
-[data-testid="stVerticalBlockBorderWrapper"] {
+/* Bordered containers made with ui.panel(); the key class is the only stable hook. */
+[class*="st-key-card-"] {
   border-radius: var(--cp-radius);
   border-color: var(--cp-border) !important;
   background: var(--cp-surface);
@@ -177,6 +202,15 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-baseweb="tab-list"] { gap: var(--cp-s5); border-bottom: 1px solid var(--cp-border); }
 [data-baseweb="tab"] { font-size: var(--cp-fs-md); font-weight: 500; padding: var(--cp-s3) 0; }
 [data-baseweb="tab-highlight"] { background-color: var(--cp-teal); transition: all 220ms var(--cp-ease); }
+
+/* Streamlit colours selected tabs, toggles and slider values with primaryColor. Brand teal is
+   only 3.6:1 on the dark page, so text in that role uses --cp-teal (brightened in dark mode). */
+[data-testid="stTab"][aria-selected="true"] p,
+button[aria-checked="true"] p,
+button[aria-pressed="true"] p,
+[data-testid="stSliderThumbValue"] {
+  color: var(--cp-teal) !important;
+}
 
 /* Charts and tables fade in */
 [data-testid="stPlotlyChart"], [data-testid="stDataFrame"], [data-testid="stImage"] {

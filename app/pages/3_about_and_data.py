@@ -6,7 +6,7 @@ import streamlit as st
 from carprice.predict import FIELD_LABELS
 import components  # noqa: F401  (puts src/ on the import path)
 from components.data import library_versions, model_card, report_table
-from components.ui import info_note, metric_card, page_header, safely, section_header
+from components.ui import info_note, metric_card, page_header, panel, safely, section_header
 
 RULE_NAMES = {
     "drop_identifier_columns": "Drop ID columns",
@@ -49,7 +49,7 @@ def cleaning_section(log: pd.DataFrame) -> None:
             "What it did": log["details"],
         }
     )
-    with st.container(border=True):
+    with panel("cleaning"):
         section_header("How the data was cleaned")
         st.table(
             table.style.format({"Rows affected": "{:,}", "Rows after": "{:,}"}).hide(axis="index")
@@ -63,7 +63,7 @@ def cleaning_section(log: pd.DataFrame) -> None:
 def how_it_works(card: dict) -> None:
     """Four sentences on the model (7.5)."""
     cv = card["cross_validation"]
-    with st.container(border=True):
+    with panel("how-it-works"):
         section_header("How the model works")
         st.html(
             '<p class="cp-caption">The model learns from past listings how price depends on a '
@@ -113,7 +113,7 @@ def model_card_section(card: dict) -> None:
         ("Target", card["target_transform"]),
     ]
     rows += [(f"Library: {name}", version) for name, version in library_versions().items()]
-    with st.container(border=True):
+    with panel("model-card"):
         section_header("Model card")
         st.table(pd.DataFrame(rows, columns=["Item", "Value"]).style.hide(axis="index"))
 

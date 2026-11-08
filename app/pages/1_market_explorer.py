@@ -23,6 +23,7 @@ from components.ui import (
     format_lakh,
     metric_card,
     page_header,
+    panel,
     safely,
 )
 
@@ -31,7 +32,7 @@ LAKH = 100000.0
 
 def filter_bar(listings: pd.DataFrame) -> MarketFilter:
     """Brand, fuel, transmission, age and price filters in one row (7.3.1)."""
-    with st.container(border=True):
+    with panel("filters"):
         top = st.columns([3, 2, 2])
         brands = top[0].multiselect(
             "Brands", sorted(listings["brand"].unique()), placeholder="All brands"

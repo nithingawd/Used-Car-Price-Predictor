@@ -11,6 +11,7 @@ from components.palette import (
     INK_COLOR,
     PRIMARY_TEAL,
     SLATE,
+    SURFACE_COLOR,
     TEAL_TINT,
     style_figure,
 )
@@ -95,7 +96,7 @@ def whatif_chart(curve: pd.DataFrame, field: str, current: float, x_label: str) 
             y=[here],
             mode="markers",
             name="This car",
-            marker={"color": INK_COLOR, "size": 11, "line": {"color": "white", "width": 2}},
+            marker={"color": INK_COLOR, "size": 11, "line": {"color": SURFACE_COLOR, "width": 2}},
             hovertemplate="This car: ₹ %{y:.2f} lakh<extra></extra>",
         )
     )
@@ -185,7 +186,7 @@ def age_trend_chart(by_age: pd.DataFrame, trend: pd.Series) -> go.Figure:
                 marker={
                     "size": sizes,
                     "color": PRIMARY_TEAL,
-                    "line": {"color": "white", "width": 1},
+                    "line": {"color": SURFACE_COLOR, "width": 1},
                 },
                 name="Median price",
                 customdata=by_age["n_listings"],
@@ -338,7 +339,7 @@ def error_histogram(predictions: pd.DataFrame) -> go.Figure:
             x=errors,
             xbins={"start": -ERROR_DISPLAY_LIMIT, "end": ERROR_DISPLAY_LIMIT, "size": 2},
             marker_color=PRIMARY_TEAL,
-            marker_line={"color": "white", "width": 1},
+            marker_line={"color": SURFACE_COLOR, "width": 1},
             hovertemplate="%{x}%: %{y:,} cars<extra></extra>",
         )
     )

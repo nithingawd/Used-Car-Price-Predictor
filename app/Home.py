@@ -25,6 +25,7 @@ from components.ui import (
     info_note,
     load_theme,
     page_header,
+    panel,
     range_bar,
     safely,
     section_header,
@@ -209,7 +210,7 @@ def similar_message(car: CarSpec, similar: dict[str, Any] | None) -> str:
 def result_card(estimate: dict[str, Any], stale: bool) -> None:
     """The estimate (largest element), its 80% range, context and cautions."""
     result, car = estimate["result"], estimate["car"]
-    with st.container(border=True):
+    with panel("result"):
         status = (
             '<span class="cp-pill">Inputs changed: press Estimate price to update</span>'
             if stale
@@ -263,7 +264,7 @@ def result_column(estimate: dict[str, Any] | None) -> None:
 
 def why_panel(estimate: dict[str, Any]) -> None:
     """Top factors for this one car (TreeSHAP)."""
-    with st.container(border=True):
+    with panel("why"):
         section_header("Why this price")
         st.plotly_chart(factor_chart(estimate["factors"]), config=PLOTLY_CONFIG, width="stretch")
         top = estimate["factors"].iloc[0]
@@ -276,7 +277,7 @@ def why_panel(estimate: dict[str, Any]) -> None:
 def compare_panel(estimate: dict[str, Any]) -> None:
     """This car against the median listing of the same brand and age."""
     car, peer = estimate["car"], estimate["peer"]
-    with st.container(border=True):
+    with panel("compare"):
         section_header("Compare")
         if peer is None:
             st.html(
@@ -311,7 +312,7 @@ def whatif_values(field: str, predictor: PricePredictor) -> tuple[list[float], s
 def whatif_panel(estimate: dict[str, Any]) -> None:
     """Estimate as age or km changes, other inputs fixed (re-renders on its own)."""
     predictor, car = get_predictor(), estimate["car"]
-    with st.container(border=True):
+    with panel("whatif"):
         section_header("What if")
         choice = st.segmented_control(
             "Change",
@@ -331,7 +332,7 @@ def whatif_panel(estimate: dict[str, Any]) -> None:
         first, last = curve["predicted_inr"].iloc[0], curve["predicted_inr"].iloc[-1]
         st.html(
             f'<p class="cp-caption">Across this range the estimate moves from {format_lakh(first)} '
-            f"to {format_lakh(last)}; the dark dot is this car.</p>"
+            f"to {format_lakh(last)}; the ringed dot is this car.</p>"
         )
 
 
@@ -407,7 +408,7 @@ def batch_results(predictor: PricePredictor, frame: pd.DataFrame) -> None:
 def batch_tab(predictor: PricePredictor, specs: pd.DataFrame) -> None:
     """7.2.6: upload, validate, preview, download."""
     left, right = st.columns([2, 3], gap="large")
-    with left, st.container(border=True):
+    with left, panel("batch-upload"):
         section_header("Price many cars at once")
         st.html(
             '<p class="cp-caption">Upload a CSV with one car per row and the same columns as '
@@ -439,7 +440,7 @@ def single_tab(predictor: PricePredictor, specs: pd.DataFrame) -> None:
     if "estimate" not in st.session_state:
         run_estimate(predictor, current_inputs())
     left, right = st.columns([2, 3], gap="large")
-    with left, st.container(border=True):
+    with left, panel("inputs"):
         vehicle_inputs(predictor, specs)
         condition_inputs(predictor)
         engine_inputs(predictor)

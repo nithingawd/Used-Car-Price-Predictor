@@ -1,8 +1,10 @@
 """Reusable presentation components. Pages build their UI from these only (7.1)."""
 
 from collections.abc import Callable, Iterable
+from contextlib import AbstractContextManager
 from html import escape
 from pathlib import Path
+import re
 from typing import Any
 
 import plotly.graph_objects as go
@@ -28,6 +30,7 @@ __all__ = [
     "load_theme",
     "metric_card",
     "page_header",
+    "panel",
     "range_bar",
     "section_header",
     "safely",
@@ -97,9 +100,16 @@ def empty_state(title: str, message: str) -> None:
     )
 
 
+def panel(name: str) -> AbstractContextManager[Any]:
+    """A bordered card container. Its key adds the class `st-key-card-<name>`, which theme.css
+    uses to give every card the surface colour in light and dark mode (D-036).
+    `name` must be unique on the page."""
+    return st.container(border=True, key=f"card-{name}")
+
+
 def chart_card(fig: go.Figure, title: str, takeaway: str) -> None:
-    """A white card holding a finding-style title, the chart and its text takeaway (A7)."""
-    with st.container(border=True):
+    """A surface card holding a finding-style title, the chart and its text takeaway (A7)."""
+    with panel(re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")):
         section_header(title)
         st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
         st.html(f'<p class="cp-caption">{escape(takeaway)}</p>')

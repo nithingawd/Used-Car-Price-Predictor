@@ -15,6 +15,7 @@ from components.ui import (
     info_note,
     metric_card,
     page_header,
+    panel,
     safely,
     section_header,
 )
@@ -89,7 +90,7 @@ def comparison_table() -> None:
     ).format(
         {"CV log RMSE": "{:.4f}", "± std": "{:.4f}", "CV R²": "{:.4f}", "CV MAE (₹)": format_inr}
     )
-    with st.container(border=True):
+    with panel("benchmark"):
         section_header("Ten algorithms compared before tuning (5-fold CV on training data)")
         st.dataframe(styled, hide_index=True, width="stretch")
         test = card[card["split"].str.startswith("test")].iloc[0]
@@ -151,10 +152,10 @@ def drivers_section() -> None:
     shap_table = report_table("shap_importance")
     top = shap_table.head(4)
     left, right = st.columns([3, 2], gap="medium")
-    with left, st.container(border=True):
+    with left, panel("drivers-text"):
         section_header(f"{factor_label(top.iloc[0]['feature'])} moves predicted price the most")
         st.image(str(report_figure("shap_01_summary")), width="stretch")
-    with right, st.container(border=True):
+    with right, panel("drivers-figure"):
         section_header("What drives the price")
         shares = ", ".join(
             f"{factor_label(r.feature).lower()} ({r.share_pct:.1f}%)" for r in top.itertuples()

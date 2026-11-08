@@ -1,4 +1,4 @@
-"""Capture reports/figures/gui_*.png of every page at desktop and narrow widths (task 7.6).
+"""Capture reports/figures/gui_*.png of every page at desktop and narrow widths, light and dark.
 
 Drives a headless Chrome over the DevTools protocol so it can wait until Streamlit has
 finished rendering (no skeletons, no running spinners) before capturing.
@@ -33,6 +33,8 @@ PAGES = {
     "about_and_data": "about_and_data",
 }
 WIDTHS = {"desktop": 1440, "narrow": 800}
+# The app follows the browser colour scheme by default (D-036); dark shots get a "_dark" suffix.
+SCHEMES = {"light": "", "dark": "_dark"}
 DEBUG_PORT = 9333
 READY_SCRIPT = """
 (() => {
@@ -90,8 +92,8 @@ async def wait_until_ready(tools: DevTools, timeout_s: float) -> None:
     raise TimeoutError("Page did not finish rendering in time")
 
 
-async def capture(tools: DevTools, url: str, width: int, out_path: Path) -> None:
-    """Load url at the given width and save a full-height PNG."""
+async def capture(tools: DevTools, url: str, width: int, scheme: str, out_path: Path) -> None:
+    """Load url at the given width and colour scheme and save a full-height PNG."""
     await tools.call(
         "Emulation.setDeviceMetricsOverride",
         width=width,
@@ -100,7 +102,7 @@ async def capture(tools: DevTools, url: str, width: int, out_path: Path) -> None
         mobile=False,
     )
     await tools.call(
-        "Emulation.setEmulatedMedia", features=[{"name": "prefers-color-scheme", "value": "light"}]
+        "Emulation.setEmulatedMedia", features=[{"name": "prefers-color-scheme", "value": scheme}]
     )
     await tools.call("Page.navigate", url=url)
     await wait_until_ready(tools, timeout_s=90)
@@ -155,12 +157,14 @@ async def run(base_url: str, out_dir: Path) -> list[Path]:
     async with websockets.connect(page_socket_url(), max_size=None) as socket:
         tools = DevTools(socket)
         await tools.call("Page.enable")
-        for name, path in PAGES.items():
-            for label, width in WIDTHS.items():
-                target = out_dir / f"gui_{name}_{label}.png"
-                await capture(tools, f"{base_url.rstrip('/')}/{path}", width, target)
-                saved.append(target)
-                print(f"saved {target}")
+        for scheme, suffix in SCHEMES.items():
+            for name, path in PAGES.items():
+                for label, width in WIDTHS.items():
+                    target = out_dir / f"gui_{name}_{label}{suffix}.png"
+                    url = f"{base_url.rstrip('/')}/{path}"
+                    await capture(tools, url, width, scheme, target)
+                    saved.append(target)
+                    print(f"saved {target}")
         await tools.call("Page.navigate", url="about:blank")  # close the app session cleanly
         await asyncio.sleep(1.0)
     return saved
