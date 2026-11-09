@@ -453,7 +453,7 @@ To show how the model responds to age and kilometres, the most common car in the
 
 ## Speed
 
-The predictor must load in under 2.0 seconds and answer one car in under 100 ms (`prediction` block of the config). Measured in five fresh processes on mains power, loading took 0.335 s to 0.419 s and the median single prediction 20.508 ms to 24.887 ms, so every run passes both targets [`predictor_timing.csv`]. An earlier measurement on battery in a power-saving plan was several times slower; that is why the targets are checked on the fastest and slowest of five runs (D-031, D-044). The GUI's full response (validation, prediction, explanation and comparisons) is held to the 2.0-second budget by an automated test (`gui.max_response_seconds`, D-033).
+The predictor must load in under 2.0 seconds and answer one car in under 100 ms (`prediction.max_load_seconds` and `max_single_prediction_ms` in `configs/config.yaml`). Timing is measured in five fresh processes by `python tasks.py predict` and written to `reports/tables/predictor_timing.csv`; on the development laptop on mains power every run passed both targets with a wide margin (D-044). Timings vary from machine to machine and run to run, so the exact values are not quoted here as results. An earlier measurement on battery in a power-saving plan was several times slower, which is why the targets are checked on both the fastest and the slowest of the five runs (D-031). The GUI's full response (validation, prediction, explanation and comparisons) is held to the 2.0-second budget by an automated test (`gui.max_response_seconds`, D-033).
 
 # Graphical user interface
 
@@ -770,8 +770,6 @@ Every number quoted in this report, in order of first appearance, with the file 
 | 1,798 | `reports/predictions/worked_examples.csv` | 189 | `reports/predictions/worked_examples.csv` |
 | 89 | `reports/predictions/worked_examples.csv` | 10,000 | `reports/predictions/whatif_age_km.csv` |
 | 7,66,034 | `reports/predictions/whatif_age_km.csv` | 3,12,029 | `reports/predictions/whatif_age_km.csv` |
-| 2.0 | `predictor_timing.csv` | 100 | `predictor_timing.csv` |
-| 0.335 | `predictor_timing.csv` | 0.419 | `predictor_timing.csv` |
-| 20.508 | `predictor_timing.csv` | 24.887 | `predictor_timing.csv` |
+| 2.0 | `configs/config.yaml` | 100 | `configs/config.yaml` |
 
 <!-- number-sources:end -->

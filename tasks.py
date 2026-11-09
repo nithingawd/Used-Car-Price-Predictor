@@ -32,13 +32,19 @@ def python_exe() -> str:
 def child_env() -> dict[str, str]:
     """Environment for child processes.
 
-    MSYS2's GNU make drops USERPROFILE and HOMEDRIVE when it starts Windows programs, and
-    Python, matplotlib and Streamlit then cannot find a home folder. Restore USERPROFILE
-    from HOME in that case (D-037).
+    MSYS2's GNU make drops USERPROFILE, LOCALAPPDATA and APPDATA when it starts Windows
+    programs; Python and Streamlit then find no home folder and pip caches into the
+    project. Restore them from HOME in that case (D-037).
     """
     env = dict(os.environ)
-    if os.name == "nt" and "USERPROFILE" not in env and env.get("HOME"):
+    if os.name != "nt":
+        return env
+    if "USERPROFILE" not in env and env.get("HOME"):
         env["USERPROFILE"] = env["HOME"]
+    profile = env.get("USERPROFILE")
+    for name, folder in (("LOCALAPPDATA", "AppData/Local"), ("APPDATA", "AppData/Roaming")):
+        if profile and name not in env:
+            env[name] = str(Path(profile) / folder)
     return env
 
 

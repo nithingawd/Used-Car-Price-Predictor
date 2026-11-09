@@ -38,6 +38,13 @@ IGNORED_PATTERNS = (
     re.compile(r"\b\d{4}-\d{2}-\d{2}(?:T[\d:.+]*)?\b"),
     re.compile(r"\bv\d+(?:\.\d+)*\b"),
 )
+# Measurements that change on every run (wall-clock times, timestamps, the git commit) are
+# not reproducible results, so they can neither support a quoted number nor be quoted.
+VOLATILE_FILES = frozenset({"predictor_timing.csv"})
+VOLATILE_COLUMNS = frozenset(
+    {"fit_time_sec", "pred_time_sec", "datetime_start", "datetime_complete", "duration"}
+)
+VOLATILE_KEYS = frozenset({"timestamp_utc", "git_commit"})
 
 
 @dataclass(frozen=True)
@@ -87,6 +94,7 @@ def _relative_name(path: Path, root: Path) -> str:
 def table_source(path: Path, root: Path) -> SourceValues:
     """Read a CSV table (header and cells) into a SourceValues record."""
     table = pd.read_csv(path)
+    table = table.drop(columns=[c for c in table.columns if c in VOLATILE_COLUMNS])
     found = numbers_in(list(table.columns))
     found += [n for cell in table.to_numpy().ravel() for n in numbers_in(cell)]
     return SourceValues(_relative_name(path, root), _scaled(found))
@@ -96,6 +104,8 @@ def structured_source(path: Path, root: Path) -> SourceValues:
     """Read a JSON or YAML file into a SourceValues record."""
     text = path.read_text(encoding="utf-8")
     data = json.loads(text) if path.suffix == ".json" else yaml.safe_load(text)
+    if isinstance(data, dict):
+        data = {key: value for key, value in data.items() if key not in VOLATILE_KEYS}
     return SourceValues(_relative_name(path, root), _scaled(numbers_in(data)))
 
 
@@ -106,10 +116,12 @@ def load_sources(root: Path) -> list[SourceValues]:
         root: Project root containing ``reports/``, ``models`` and ``configs``.
 
     Returns:
-        list[SourceValues]: Tables, prediction files, model JSON files, then the config.
+        list[SourceValues]: Tables, prediction files, model JSON files, then the config;
+        volatile files, columns and keys (run times, timestamps, commit) are left out.
     """
     tables = sorted((root / "reports" / "tables").glob("*.csv"))
     tables += sorted((root / "reports" / "predictions").glob("*.csv"))
+    tables = [path for path in tables if path.name not in VOLATILE_FILES]
     model_files = sorted((root / "models").glob("*.json"))
     sources = [table_source(path, root) for path in tables]
     sources += [structured_source(path, root) for path in model_files]

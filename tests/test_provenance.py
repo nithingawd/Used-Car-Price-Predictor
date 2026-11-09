@@ -144,3 +144,23 @@ def test_citation_is_preferred_over_first_match() -> None:
     table = number_source_table(text, sources)
     assert list(table["source_file"]) == ["configs/config.yaml", "reports/tables/first.csv"]
     assert list(table["matched_by"]) == ["cited", "search"]
+
+
+def test_volatile_measurements_are_not_sources(tmp_path: Path) -> None:
+    """Run times, timing tables and timestamps can neither support nor be quoted numbers."""
+    tables = tmp_path / "reports" / "tables"
+    tables.mkdir(parents=True)
+    (tmp_path / "models").mkdir()
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs" / "config.yaml").write_text("seed: 42\n", encoding="utf-8")
+    pd.DataFrame({"model_id": ["a"], "rmse": [0.1654], "fit_time_sec": [0.5098]}).to_csv(
+        tables / "cv_results.csv", index=False
+    )
+    pd.DataFrame({"single_median_ms": [27.221]}).to_csv(
+        tables / "predictor_timing.csv", index=False
+    )
+    sources = load_sources(tmp_path)
+    assert unsupported_numbers("CV 0.1654, fit 50.98%, median 27.221 ms", sources) == [
+        "50.98",
+        "27.221",
+    ]
