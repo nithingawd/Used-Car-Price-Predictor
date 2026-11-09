@@ -1,5 +1,7 @@
 """Unit and integration tests for data loading, validation, and cleansing rules."""
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -74,6 +76,24 @@ def test_drop_exact_duplicates(sample_raw_df: pd.DataFrame) -> None:
     assert log.rows_after == 4
 
 
+@pytest.mark.parametrize(
+    "rule",
+    [
+        drop_identifier_columns,
+        normalise_text,
+        drop_exact_duplicates,
+        fix_invalid_seats,
+        lambda frame: treat_km_outliers(frame, km_cap=500000),
+    ],
+)
+def test_cleaning_rules_do_not_mutate_their_input(sample_raw_df: pd.DataFrame, rule) -> None:
+    """A4: every cleaning rule returns a new frame and leaves its input untouched."""
+    before = sample_raw_df.copy(deep=True)
+    cleaned, _ = rule(sample_raw_df)
+    pd.testing.assert_frame_equal(sample_raw_df, before)
+    assert cleaned is not sample_raw_df
+
+
 def test_fix_invalid_seats(sample_raw_df: pd.DataFrame) -> None:
     """Verify that seats=0 is imputed with brand/model modal count."""
     cleaned, log = fix_invalid_seats(sample_raw_df)
@@ -126,10 +146,15 @@ def test_validate_ranges() -> None:
         validate_ranges(invalid_df)
 
 
-def test_run_cleaning_end_to_end() -> None:
-    """Test full cleaning pipeline on the actual raw cardekho dataset."""
-    config = get_config()
-    cleaned_df, log_df = run_cleaning()
+def test_run_cleaning_end_to_end(tmp_path: Path) -> None:
+    """Test full cleaning pipeline on the actual raw cardekho dataset.
+
+    Outputs go to tmp_path: rewriting data/interim/cars_clean.csv would make the Makefile
+    treat the split and model as stale (D-037).
+    """
+    interim_path = tmp_path / "cars_clean.csv"
+    log_path = tmp_path / "cleaning_log.csv"
+    cleaned_df, log_df = run_cleaning(interim_path=interim_path, log_path=log_path)
 
     # Reconcile row counts: raw 15,411 minus 167 duplicates = 15,244 rows
     assert len(cleaned_df) == 15244
@@ -144,8 +169,10 @@ def test_run_cleaning_end_to_end() -> None:
     assert "Electric" not in cleaned_df["fuel_type"].values
 
     # Verify output files exist
-    assert (config.paths.interim_data_dir / "cars_clean.csv").exists()
-    assert (config.paths.tables_dir / "cleaning_log.csv").exists()
+    assert interim_path.exists()
+    assert log_path.exists()
+    saved_log = pd.read_csv(get_config().paths.tables_dir / "cleaning_log.csv")
+    pd.testing.assert_frame_equal(log_df.reset_index(drop=True), saved_log, check_dtype=False)
 
     # Verify cleaning log structure
     assert len(log_df) == 7

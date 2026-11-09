@@ -583,17 +583,26 @@ def plot_luxury_outliers(df: pd.DataFrame) -> plt.Figure:
     top_lux_brands = lux_df["brand"].value_counts().head(8).index
     lux_filtered = lux_df[lux_df["brand"].isin(top_lux_brands)]
 
-    sns.stripplot(
-        data=lux_filtered,
-        x="brand",
-        y=lux_filtered["selling_price"] / 100000,
-        hue="fuel_type",
-        palette=CATEGORICAL_PALETTE[:2],
-        jitter=0.25,
-        size=6,
-        alpha=0.75,
-        ax=ax_lux,
-    )
+    # seaborn draws strip jitter from numpy's global generator; seed it with the project seed
+    # for this call only, so the figure is identical on every run (D-037).
+    from carprice.config import get_config
+
+    saved_state = np.random.get_state()
+    np.random.seed(get_config().project.random_seed)
+    try:
+        sns.stripplot(
+            data=lux_filtered,
+            x="brand",
+            y=lux_filtered["selling_price"] / 100000,
+            hue="fuel_type",
+            palette=CATEGORICAL_PALETTE[:2],
+            jitter=0.25,
+            size=6,
+            alpha=0.75,
+            ax=ax_lux,
+        )
+    finally:
+        np.random.set_state(saved_state)
     ax_lux.set_title("Luxury Outliers: Authentic Premium Marques (₹25 Lakh to ₹3.95 Crore)", pad=12)
     ax_lux.set_xlabel("Luxury Vehicle Brand")
     ax_lux.set_ylabel("Selling Price (₹ in Lakhs)")
