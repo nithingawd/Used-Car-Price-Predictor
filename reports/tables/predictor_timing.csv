@@ -1,3 +1,3 @@
 statistic,library_import_s,predictor_load_s,single_median_ms,single_p95_ms,max_load_s,max_single_ms,load_passes,single_passes,repeats,warmup_calls
-best of 5 runs,6.013,0.474,27.221,28.246,2.0,100,True,True,50,10
-worst of 5 runs,17.156,2.107,154.517,408.605,2.0,100,False,False,50,10
+best of 5 runs,3.413,0.335,20.508,27.586,2.0,100,True,True,50,10
+worst of 5 runs,8.766,0.419,24.887,33.704,2.0,100,True,True,50,10
