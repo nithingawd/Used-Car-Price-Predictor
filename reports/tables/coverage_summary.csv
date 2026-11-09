@@ -1,0 +1,19 @@
+module,statements,missed,covered_pct
+src/carprice/__init__.py,0,0,100.0
+src/carprice/config.py,146,2,98.6
+src/carprice/data.py,258,11,95.7
+src/carprice/eval_plots.py,197,13,93.4
+src/carprice/evaluate.py,294,46,84.4
+src/carprice/features.py,156,27,82.7
+src/carprice/formatting.py,10,0,100.0
+src/carprice/insights.py,68,1,98.5
+src/carprice/market.py,48,2,95.8
+src/carprice/palette.py,26,0,100.0
+src/carprice/predict.py,273,14,94.9
+src/carprice/prediction_reports.py,188,49,73.9
+src/carprice/provenance.py,145,14,90.3
+src/carprice/report_facts.py,106,8,92.5
+src/carprice/train.py,308,56,81.8
+src/carprice/viz.py,327,2,99.4
+TOTAL,2550,245,90.4
+TOTAL before Phase 8 tests,2498,1153,53.8

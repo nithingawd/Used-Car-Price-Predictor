@@ -1,0 +1,103 @@
+file,match,max_abs_gap,note
+reports/tables/audit_categorical_frequencies.csv,True,0.0,
+reports/tables/audit_duplicates.csv,True,0.0,
+reports/tables/audit_electric_rows.csv,True,0.0,
+reports/tables/audit_km_outliers.csv,True,0.0,
+reports/tables/audit_logical_checks.csv,True,0.0,
+reports/tables/audit_name_consistency.csv,True,0.0,
+reports/tables/audit_numeric_summary.csv,True,0.0,
+reports/tables/audit_schema.csv,True,0.0,
+reports/tables/audit_seats_anomalies.csv,True,0.0,
+reports/tables/bootstrap_ci.csv,True,0.0,
+reports/tables/cleaning_log.csv,True,0.0,
+reports/tables/cv_results.csv,True,0.0,
+reports/tables/eda_brand_medians.csv,True,0.0,
+reports/tables/eda_depreciation_rates.csv,True,0.0,
+reports/tables/eda_fuel_medians.csv,True,0.0,
+reports/tables/eda_hypothesis_tests.csv,True,0.0,
+reports/tables/eda_model_cross_brand.csv,True,0.0,
+reports/tables/eda_numeric_summary.csv,True,0.0,
+reports/tables/eda_pearson_correlation.csv,True,0.0,
+reports/tables/eda_rare_brands.csv,True,0.0,
+reports/tables/eda_seats_medians.csv,True,0.0,
+reports/tables/eda_seller_medians.csv,True,0.0,
+reports/tables/eda_spearman_correlation.csv,True,0.0,
+reports/tables/eda_transmission_medians.csv,True,0.0,
+reports/tables/eda_vif_summary.csv,True,0.0,
+reports/tables/encoder_comparison.csv,True,0.0,
+reports/tables/feature_checks.csv,True,0.0,
+reports/tables/interval_coverage.csv,True,0.0,
+reports/tables/model_candidates.csv,True,0.0,
+reports/tables/permutation_importance.csv,True,0.0,
+reports/tables/report_key_figures.csv,False,,missing in candidate
+reports/tables/residual_stats.csv,True,0.0,
+reports/tables/segment_errors.csv,True,0.0,
+reports/tables/shap_importance.csv,True,0.0,
+reports/tables/test_metrics.csv,True,0.0,
+reports/tables/test_predictions.csv,True,0.0,
+reports/tables/top_error_patterns.csv,True,0.0,
+reports/tables/top_errors.csv,True,0.0,
+reports/tables/train_vs_test.csv,True,0.0,
+reports/tables/tuning_trials_hist_gradient_boosting.csv,True,0.0,
+reports/tables/tuning_trials_lightgbm.csv,True,0.0,
+reports/tables/tuning_trials_xgboost.csv,True,0.0,
+reports/predictions/test_predictions.csv,True,0.0,
+reports/predictions/whatif_age_km.csv,True,0.0,
+reports/predictions/worked_examples.csv,False,0.0,"top_drivers, explanation"
+models/best_params.json,True,,
+models/input_schema.json,True,,
+models/model_card.json,True,,
+reports/figures/eda_01_selling_price_raw_vs_log.png,True,,byte comparison
+reports/figures/eda_02_dist_selling_price.png,True,,byte comparison
+reports/figures/eda_03_dist_vehicle_age.png,True,,byte comparison
+reports/figures/eda_04_dist_km_driven.png,True,,byte comparison
+reports/figures/eda_05_dist_mileage.png,True,,byte comparison
+reports/figures/eda_06_dist_engine.png,True,,byte comparison
+reports/figures/eda_07_dist_max_power.png,True,,byte comparison
+reports/figures/eda_08_cat_brand.png,True,,byte comparison
+reports/figures/eda_09_cat_fuel_type.png,True,,byte comparison
+reports/figures/eda_10_cat_transmission.png,True,,byte comparison
+reports/figures/eda_11_cat_seller_type.png,True,,byte comparison
+reports/figures/eda_12_cat_seats.png,True,,byte comparison
+reports/figures/eda_13_price_by_brand.png,True,,byte comparison
+reports/figures/eda_14_price_by_fuel.png,True,,byte comparison
+reports/figures/eda_15_price_by_transmission.png,True,,byte comparison
+reports/figures/eda_16_price_by_seller.png,True,,byte comparison
+reports/figures/eda_17_price_by_seats.png,True,,byte comparison
+reports/figures/eda_18_scatter_price_vs_age.png,True,,byte comparison
+reports/figures/eda_19_scatter_price_vs_km.png,True,,byte comparison
+reports/figures/eda_20_scatter_price_vs_power.png,True,,byte comparison
+reports/figures/eda_21_scatter_price_vs_engine.png,True,,byte comparison
+reports/figures/eda_22_depreciation_curves.png,True,,byte comparison
+reports/figures/eda_23_correlation_heatmaps.png,True,,byte comparison
+reports/figures/eda_24_interaction_power_transmission.png,True,,byte comparison
+reports/figures/eda_25_interaction_age_fuel.png,True,,byte comparison
+reports/figures/eda_26_luxury_segment_outliers.png,False,,byte comparison
+reports/figures/eval_01_predicted_vs_actual.png,True,,byte comparison
+reports/figures/eval_02_residuals_vs_predicted.png,True,,byte comparison
+reports/figures/eval_03_residual_qq.png,True,,byte comparison
+reports/figures/eval_04_pct_error_hist.png,True,,byte comparison
+reports/figures/eval_05_segment_within10.png,True,,byte comparison
+reports/figures/eval_06_model_comparison.png,True,,byte comparison
+reports/figures/eval_07_permutation_importance.png,True,,byte comparison
+reports/figures/gui_about_and_data_desktop.png,True,,byte comparison
+reports/figures/gui_about_and_data_narrow.png,True,,byte comparison
+reports/figures/gui_estimator_desktop.png,True,,byte comparison
+reports/figures/gui_estimator_narrow.png,True,,byte comparison
+reports/figures/gui_market_explorer_desktop.png,True,,byte comparison
+reports/figures/gui_market_explorer_narrow.png,True,,byte comparison
+reports/figures/gui_model_performance_desktop.png,True,,byte comparison
+reports/figures/gui_model_performance_narrow.png,True,,byte comparison
+reports/figures/model_cv_comparison.png,True,,byte comparison
+reports/figures/shap_01_summary.png,True,,byte comparison
+reports/figures/shap_02_dependence_model.png,True,,byte comparison
+reports/figures/shap_03_dependence_vehicle_age.png,True,,byte comparison
+reports/figures/shap_04_dependence_max_power.png,True,,byte comparison
+reports/figures/shap_05_dependence_engine.png,True,,byte comparison
+reports/figures/tuning_history.png,True,,byte comparison
+reports/figures/tuning_param_importances.png,True,,byte comparison
+reports/figures/whatif_age_km.png,True,,byte comparison
+data/interim/cars_clean.csv,True,0.0,
+data/processed/train.csv,True,0.0,
+data/processed/test.csv,True,0.0,
+data/processed/split_indices.json,True,,

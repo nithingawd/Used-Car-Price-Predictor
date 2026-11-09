@@ -1,0 +1,11 @@
+run,commit,make_target,exit_code,seconds,tests_passed,test_errors,retrained_before_step
+audit-1,6968954,setup,0,438,,,False
+audit-1,6968954,clean,0,2,,,False
+audit-1,6968954,train,2,31,,,False
+audit-2,f1195ee,clean,0,2,,,False
+audit-2,f1195ee,train,0,1170,,,False
+audit-2,f1195ee,evaluate,0,36,,,False
+audit-2,f1195ee,test,2,35,146.0,3.0,False
+audit-3,675fb7d,test,0,637,149.0,,True
+audit-3,675fb7d,eda,0,28,,,False
+audit-3,675fb7d,predict,0,1251,,,True
