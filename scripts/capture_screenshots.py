@@ -68,6 +68,7 @@ class DevTools:
     """Minimal Chrome DevTools protocol client over one page websocket."""
 
     def __init__(self, socket: websockets.ClientConnection) -> None:
+        """Wrap an open page websocket; message ids start at zero."""
         self.socket, self.counter = socket, 0
 
     async def call(self, method: str, **params: object) -> dict:

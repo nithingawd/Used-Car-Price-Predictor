@@ -414,6 +414,7 @@ def tune_model_study(
     study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=seed))
 
     def objective(trial: optuna.Trial) -> float:
+        """Mean CV log RMSE of one trial's parameters over the precomputed folds."""
         params = suggest_params(trial, space)
         fold_rmses: list[float] = []
         for X_tr, y_tr, X_val, y_val in prepared_folds:

@@ -39,3 +39,7 @@ $RECYCLE.BIN/
 .vscode/
 .idea/
 
+
+# Coverage output
+.coverage
+htmlcov/
