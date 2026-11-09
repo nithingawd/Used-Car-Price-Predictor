@@ -15,6 +15,7 @@ from carprice.data import (
     run_cleaning,
     treat_km_outliers,
     validate_ranges,
+    write_csv_if_changed,
 )
 
 
@@ -178,3 +179,15 @@ def test_run_cleaning_end_to_end(tmp_path: Path) -> None:
     assert len(log_df) == 7
     total_dropped = log_df["rows_before"].iloc[0] - log_df["rows_after"].iloc[-1]
     assert total_dropped == 167
+
+
+def test_write_csv_if_changed_keeps_identical_files(tmp_path: Path) -> None:
+    """Identical content is not rewritten (timestamp kept); changed content is."""
+    path = tmp_path / "out.csv"
+    frame = pd.DataFrame({"a": [1, 2], "b": ["x", "y"]})
+    assert write_csv_if_changed(frame, path) is True
+    first_mtime = path.stat().st_mtime_ns
+    assert write_csv_if_changed(frame, path) is False
+    assert path.stat().st_mtime_ns == first_mtime
+    assert write_csv_if_changed(frame.assign(a=[1, 3]), path) is True
+    assert pd.read_csv(path)["a"].tolist() == [1, 3]

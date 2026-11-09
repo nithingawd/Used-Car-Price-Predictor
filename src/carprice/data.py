@@ -366,6 +366,29 @@ def validate_ranges(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningLogEntry]:
     return df.copy(), entry
 
 
+def write_csv_if_changed(df: pd.DataFrame, path: Path) -> bool:
+    """Write a DataFrame as CSV only when the content differs from the file on disk.
+
+    Keeping the old file (and its timestamp) when nothing changed stops ``make`` from
+    treating the split and the model as stale after an identical re-run, for example when
+    notebook 01 re-executes the cleaning (D-037).
+
+    Args:
+        df: Data to write (without the index).
+        path: Destination CSV path; parent folders are created.
+
+    Returns:
+        bool: True if the file was written, False if it already held identical content.
+    """
+    content = df.to_csv(index=False).encode("utf-8")
+    if path.exists() and path.read_bytes() == content:
+        logger.info("Unchanged, not rewritten: %s", path)
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+    return True
+
+
 def run_cleaning(
     raw_path: Path | None = None,
     interim_path: Path | None = None,
@@ -414,9 +437,8 @@ def run_cleaning(
     validate_schema(current, is_cleaned=True)
 
     # Save cleaned interim data
-    interim.parent.mkdir(parents=True, exist_ok=True)
-    current.to_csv(interim, index=False)
-    logger.info("Saved cleaned interim data to %s (shape: %s)", interim, current.shape)
+    write_csv_if_changed(current, interim)
+    logger.info("Cleaned interim data at %s (shape: %s)", interim, current.shape)
 
     # Save cleaning log table
     log_df = pd.DataFrame([entry.to_dict() for entry in logs])

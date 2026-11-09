@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, TargetEncoder
 
 from carprice.config import AppConfig, get_config
-from carprice.data import validate_schema
+from carprice.data import validate_schema, write_csv_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +108,8 @@ def create_train_test_split(
         json.dump(indices_dict, f, indent=2)
 
     # Save partitioned datasets
-    train_df.to_csv(dest_dir / "train.csv", index=False)
-    test_df.to_csv(dest_dir / "test.csv", index=False)
+    write_csv_if_changed(train_df, dest_dir / "train.csv")
+    write_csv_if_changed(test_df, dest_dir / "test.csv")
 
     logger.info(
         "Created split: train=%d, test=%d (seed=%d)",
