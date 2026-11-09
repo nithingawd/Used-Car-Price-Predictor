@@ -1,6 +1,10 @@
 # Reproducibility check (Phase 8)
 
-Can a fresh clone, a fresh environment and the documented commands reproduce the cleaned data, the model, the report figures and the GUI? This log records the commands run, how long they took, what failed, what was fixed and how the results compare with the committed ones. Decisions are in `decisions.md` D-037; every number below comes from `reports/tables/reproducibility_runs.csv`, `reproducibility_comparison.csv` or `coverage_summary.csv`.
+Can a fresh clone, a fresh environment and the documented commands reproduce the cleaned data, the model, the report figures and the GUI? This log records the commands run, how long they took, what failed, what was fixed and how the results compare with the committed ones. Decisions are in `decisions.md` D-037; every number below comes from `reports/tables/reproducibility_runs.csv`, `reproducibility_comparison.csv`, `reproducibility_comparison_final.csv` or `coverage_summary.csv`.
+
+## Verdict
+
+**Yes.** A brand-new clone of the release candidate, with a new environment, ran `make setup`, `make all`, `make test` and `make lint` successfully. All 113 compared output files (cleaned data, split, every table, every model metadata file and every figure) matched the committed project exactly, with a largest numeric difference of 0.0 [`reproducibility_comparison_final.csv`]. Getting there took three audit rounds and one final round, which found and fixed seven problems (failures 1 to 5 and two differing outputs); they are described below in the order they were found.
 
 ## Environment
 
@@ -76,9 +80,31 @@ Each `make` target runs the same function as `python tasks.py <target>`.
   2. `eda_26_luxury_segment_outliers.png` showed the same data with the points jittered differently: seaborn drew the jitter from numpy's unseeded generator. **Fixed:** seeded with the project seed (commit `26c6d75`); two consecutive runs now produce byte-identical files.
   3. `worked_examples.csv` and `.md` differed only in wording ("Car model" against "Model"): a Phase 7 label change had never been regenerated into the Phase 6 files. **Fixed:** regenerated (commit `fe4ea23`); every number is unchanged.
 
+## Final verification: a second fresh clone (commits `dd394c3` and `0d904a5`)
+
+After all Phase 8 changes and the dependency freeze, a new clone was made in a new folder with a new environment and the full pipeline was run with `make all` [`reproducibility_runs.csv`, rows `final-1` and `final-2`].
+
+| Run | Target | Exit code | Seconds | Result |
+|---|---|---|---|---|
+| final-1 | `setup` | 0 | 450 | New environment from the frozen `requirements.txt` |
+| final-1 | `all` | 0 | 985 | Clean data, EDA, split, train, evaluate, predict, key figures; no target retrained twice |
+| final-1 | `test` | 2 | 49 | 183 passed, **3 failed** |
+| final-2 | `test` | 0 | 52 | 187 passed |
+| final-2 | `lint` | 0 | 1 | `ruff check` and `ruff format --check` clean |
+
+**Failure 4.** The three failures were number checks. `make all` re-measures predictor timing and refreshes fit times and Optuna trial timestamps. The report quoted the exact timings, which then no longer matched, and the changing run-time columns could even make an invented test figure look "supported" by coincidence. **Fix (commit `0d904a5`):** the number checker ignores run-time measurements (`predictor_timing.csv`, fit and prediction time columns, trial timestamps, the model card's timestamp and commit), and the report states the timing result without quoting milliseconds.
+
+**Failure 5.** The setup step left a `pip/` cache folder inside the clone: MSYS2's make also drops `LOCALAPPDATA` and `APPDATA`. **Fix (same commit):** `tasks.py` restores them for its child processes; confirmed by starting Python through MSYS2 make.
+
+After pulling the fix, `make test` and `make lint` passed in the same clone without retraining (run `final-2`).
+
+**Final comparison.** `scripts/compare_runs.py` compared the second clone's outputs with the committed project: 113 of 113 files matched, with a largest numeric difference of 0.0 [`reproducibility_comparison_final.csv`]. This includes `eda_26_luxury_segment_outliers.png` and the worked examples, the two files that differed in the first audit. The only files that differ on disk are the run-time measurements the comparison deliberately skips (`predictor_timing.csv`, fit times in `cv_results.csv`, trial timestamps, and the model card's timestamp and commit).
+
+**Time** for the final round from an empty folder: 450 seconds for setup, 985 for the whole pipeline (mostly training) and 49 for the tests.
+
 ## Tests, lint and coverage
 
-- **Tests:** the suite passes in the clean clone (149 tests in audit 3). Phase 8 adds tests for the provenance checks, the key figures, cleaning-rule immutability and sandboxed runs of every pipeline stage; the final count is printed by `make test`.
+- **Tests:** the suite passes in a clean clone (149 tests in audit 3, 187 in the final round). Phase 8 adds tests for the provenance checks, the key figures, cleaning-rule immutability and sandboxed runs of every pipeline stage; the final count is printed by `make test`.
 - **Lint:** `ruff check .` and `ruff format --check .` pass on the whole repository, notebooks included (previously only `src/` and `tests/` were checked, and the notebooks had unused imports and unformatted cells).
 - **Coverage of `src/carprice`:** 53.8% before this phase and **90.4%** after, above the 80% aim [`coverage_summary.csv`]. The lowest modules are `prediction_reports.py` (73.9%, mostly the multi-process timing harness) and `train.py` (81.8%, mostly the command-line entry point).
 
