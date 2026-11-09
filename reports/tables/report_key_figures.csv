@@ -20,6 +20,10 @@ test_within_10pct_gain_vs_ridge_points,8.04,pct_points,within_10pct final - with
 test_mae_inr_reduction_vs_dummy_pct,75.43,pct,(mae_inr dummy - mae_inr final) / mae_inr dummy * 100,test_metrics.csv
 test_rmse_log_reduction_vs_dummy_pct,75.52,pct,(rmse_log dummy - rmse_log final) / rmse_log dummy * 100,test_metrics.csv
 test_within_10pct_gain_vs_dummy_points,36.54,pct_points,within_10pct final - within_10pct dummy,test_metrics.csv
+raw_row_count,15411.0,count,rows,data/raw/cardekho_dataset.csv
+raw_column_count,14.0,count,columns,data/raw/cardekho_dataset.csv
+clean_row_count,15244.0,count,rows,data/interim/cars_clean.csv
+clean_column_count,13.0,count,columns,data/interim/cars_clean.csv
 clean_brand_count,31.0,count,distinct brand values,data/interim/cars_clean.csv
 clean_model_count,120.0,count,distinct model values,data/interim/cars_clean.csv
 train_brand_count,30.0,count,distinct brand values,data/processed/train.csv
@@ -28,4 +32,5 @@ skewness_raw_price,10.05,skewness,sample skewness of price (pandas Series.skew),
 skewness_raw_log1p_price,0.57,skewness,sample skewness of log1p_price (pandas Series.skew),data/raw/cardekho_dataset.csv
 skewness_clean_price,10.11,skewness,sample skewness of price (pandas Series.skew),data/interim/cars_clean.csv
 skewness_clean_log1p_price,0.56,skewness,sample skewness of log1p_price (pandas Series.skew),data/interim/cars_clean.csv
+repaired_value_count,18.0,count,"rows_affected summed over fix_invalid_seats, fix_fuel_labels, treat_km_outliers",cleaning_log.csv
 rare_brand_count,13.0,count,brands with fewer than 30 cleaned rows,eda_rare_brands.csv

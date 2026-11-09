@@ -1,0 +1,143 @@
+/* Print styles for the PDF export of reports/final_report.md (A7 palette and fonts). */
+@page {
+  size: A4;
+  margin: 22mm 20mm 22mm 20mm;
+}
+
+:root {
+  --ink: #14213d;
+  --muted: #6b7280;
+  --teal: #0e7c7b;
+  --border: #e3ded3;
+  --surface: #ffffff;
+}
+
+html {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+body {
+  max-width: none;
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Fraunces", "DM Serif Display", Georgia, serif;
+  color: var(--ink);
+  line-height: 1.25;
+  break-after: avoid;
+}
+
+h1 {
+  font-size: 20pt;
+  margin: 0 0 12pt;
+}
+
+h1.title {
+  font-size: 26pt;
+  margin-top: 40mm;
+}
+
+h2 {
+  font-size: 15pt;
+  margin: 24pt 0 8pt;
+  padding-bottom: 4pt;
+  border-bottom: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 12pt;
+  margin: 16pt 0 6pt;
+}
+
+p,
+li {
+  text-align: left;
+}
+
+code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 9pt;
+  color: var(--teal);
+}
+
+pre {
+  background: #f7f5f0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8pt 12pt;
+  white-space: pre-wrap;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8pt 0 12pt;
+  font-size: 9pt;
+  break-inside: avoid;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 4pt 6pt;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--ink);
+  border-bottom: 2px solid var(--teal);
+}
+
+figure {
+  margin: 8pt 0;
+  break-inside: avoid;
+}
+
+img {
+  max-width: 100%;
+  max-height: 78mm;
+  display: block;
+  margin: 0 auto;
+}
+
+figcaption {
+  color: var(--muted);
+  font-size: 9pt;
+  margin-top: 4pt;
+}
+
+blockquote {
+  margin: 8pt 0;
+  padding: 4pt 12pt;
+  border-left: 3px solid var(--teal);
+  color: var(--ink);
+  background: #f7f5f0;
+}
+
+nav#TOC {
+  break-after: page;
+}
+
+nav#TOC ul {
+  list-style: none;
+  padding-left: 12pt;
+}
+
+a {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+/* Appendix D: the generated number-source table is long; print it compactly. */
+#appendix-d-source-of-every-number + p + table,
+table.number-sources {
+  font-size: 7.5pt;
+}

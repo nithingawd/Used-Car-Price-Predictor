@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_NAME = "report_key_figures.csv"
 DECIMALS = 2
+REPAIR_RULES = ("fix_invalid_seats", "fix_fuel_labels", "treat_km_outliers")
 
 
 @dataclass(frozen=True)
@@ -164,7 +165,16 @@ def data_scope_figures(config: AppConfig) -> list[KeyFigure]:
     """Counts of brands and models in the cleaned data and the training split."""
     clean = pd.read_csv(config.paths.interim_data_dir / "cars_clean.csv")
     train = pd.read_csv(config.paths.processed_data_dir / "train.csv")
+    raw = pd.read_csv(config.paths.raw_data_path)
     figures = []
+    for frame, label, source in (
+        (raw, "raw", config.paths.raw_data_path.relative_to(config.paths.root_dir).as_posix()),
+        (clean, "clean", "data/interim/cars_clean.csv"),
+    ):
+        for axis, size in (("row", frame.shape[0]), ("column", frame.shape[1])):
+            figures.append(
+                KeyFigure(f"{label}_{axis}_count", float(size), "count", f"{axis}s", source)
+            )
     for frame, label, source in (
         (clean, "clean", "data/interim/cars_clean.csv"),
         (train, "train", "data/processed/train.csv"),
@@ -202,6 +212,17 @@ def distribution_figures(config: AppConfig) -> list[KeyFigure]:
                     source,
                 )
             )
+    log = _read_table(config, "cleaning_log").set_index("rule_name")
+    repaired = log.loc[list(REPAIR_RULES), "rows_affected"].sum()
+    figures.append(
+        KeyFigure(
+            "repaired_value_count",
+            float(repaired),
+            "count",
+            "rows_affected summed over " + ", ".join(REPAIR_RULES),
+            "cleaning_log.csv",
+        )
+    )
     rare = _read_table(config, "eda_rare_brands")
     figures.append(
         KeyFigure(

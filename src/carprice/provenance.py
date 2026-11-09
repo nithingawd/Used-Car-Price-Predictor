@@ -150,20 +150,68 @@ def unsupported_numbers(text: str, sources: list[SourceValues]) -> list[str]:
     return [token for token in quoted_numbers(text) if source_of(token, sources) is None]
 
 
+CITATION_PATTERN = re.compile(r"`([^`\s]+\.(?:csv|json|yaml))`")
+BLOCK_SEPARATOR = re.compile(r"\n\s*\n")
+
+
+def cited_files(block: str) -> list[str]:
+    """File names cited in backticks in a block of Markdown, e.g. `test_metrics.csv`."""
+    return CITATION_PATTERN.findall(block)
+
+
+def blocks_with_context(text: str) -> list[tuple[str, list[str]]]:
+    """Paragraph blocks, each with the files cited in it or in a following table caption.
+
+    A Markdown table's caption (a block starting with ": ") cites the files for the
+    table's numbers, so it is attached to the block before it.
+    """
+    blocks = [block for block in strip_appendix_blocks(text) if block.strip()]
+    result = []
+    for i, block in enumerate(blocks):
+        cited = cited_files(block)
+        if i + 1 < len(blocks) and blocks[i + 1].lstrip().startswith(": "):
+            cited += cited_files(blocks[i + 1])
+        result.append((block, cited))
+    return result
+
+
+def strip_appendix_blocks(text: str) -> list[str]:
+    """The document without its generated appendix, split into blank-line separated blocks."""
+    return BLOCK_SEPARATOR.split(without_appendix(text))
+
+
+def cited_source_of(token: str, sources: list[SourceValues], cited: list[str]) -> str | None:
+    """First source among the cited files that contains the token, else None."""
+    preferred = [s for s in sources if any(s.name.endswith(name) for name in cited)]
+    return source_of(token, preferred)
+
+
 def number_source_table(text: str, sources: list[SourceValues]) -> pd.DataFrame:
     """One row per distinct quoted number with the file it was matched to.
+
+    A number is attributed to a file cited in the same paragraph (or table caption) when
+    that file contains it ("cited"); otherwise to the first file that contains it
+    ("search"), which shows the value exists but may not be its intended source.
 
     Args:
         text: Markdown prose to scan.
         sources: Output of ``load_sources``.
 
     Returns:
-        pd.DataFrame: Columns ``number`` and ``source_file`` (None when unsupported),
-        in order of first appearance.
+        pd.DataFrame: Columns ``number``, ``source_file`` (None when unsupported) and
+        ``matched_by``, in order of first appearance.
     """
-    tokens = list(dict.fromkeys(quoted_numbers(text)))
-    rows = [{"number": token, "source_file": source_of(token, sources)} for token in tokens]
-    return pd.DataFrame(rows, columns=["number", "source_file"])
+    rows: dict[str, dict[str, object]] = {}
+    for block, cited in blocks_with_context(text):
+        for token in quoted_numbers(block):
+            if token in rows:
+                continue
+            source = cited_source_of(token, sources, cited)
+            matched_by = "cited"
+            if source is None:
+                source, matched_by = source_of(token, sources), "search"
+            rows[token] = {"number": token, "source_file": source, "matched_by": matched_by}
+    return pd.DataFrame(list(rows.values()), columns=["number", "source_file", "matched_by"])
 
 
 def notebook_markdown(path: Path) -> str:
@@ -185,12 +233,28 @@ def without_appendix(text: str) -> str:
     return head + rest.split(APPENDIX_END, 1)[-1]
 
 
+APPENDIX_PAIRS_PER_ROW = 2
+
+
+def _source_cell(row: pd.Series) -> str:
+    """Short source label for the appendix; a trailing * marks a search match."""
+    if not row["source_file"]:
+        return "**no source found**"
+    name = str(row["source_file"]).removeprefix("reports/tables/")
+    return f"`{name}`" + ("" if row["matched_by"] == "cited" else " *")
+
+
 def appendix_markdown(table: pd.DataFrame) -> str:
-    """Render the number-source table as a Markdown table between the appendix markers."""
-    lines = [APPENDIX_START, "", "| Number as written | Source file |", "|---|---|"]
-    for row in table.itertuples(index=False):
-        source = f"`{row.source_file}`" if row.source_file else "**no source found**"
-        lines.append(f"| {row.number} | {source} |")
+    """Render the number-source table compactly, several number/source pairs per row."""
+    pairs = [(str(row["number"]), _source_cell(row)) for _, row in table.iterrows()]
+    width = APPENDIX_PAIRS_PER_ROW
+    header = "| " + " | ".join(["Number", "Source"] * width) + " |"
+    rule = "|" + "---|" * (2 * width)
+    lines = [APPENDIX_START, "", header, rule]
+    for start in range(0, len(pairs), width):
+        chunk = pairs[start : start + width]
+        chunk += [("", "")] * (width - len(chunk))
+        lines.append("| " + " | ".join(cell for pair in chunk for cell in pair) + " |")
     return "\n".join([*lines, "", APPENDIX_END])
 
 
