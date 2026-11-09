@@ -30,6 +30,10 @@ select = [
 ]
 ignore = []
 
+[tool.ruff.lint.per-file-ignores]
+# Notebooks put src/ on sys.path before importing carprice, so imports follow code (D-037).
+"notebooks/*.ipynb" = ["E402"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["carprice", "components"]
 force-sort-within-sections = true

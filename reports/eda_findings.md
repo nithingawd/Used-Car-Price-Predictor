@@ -1,92 +1,68 @@
 # Exploratory Data Analysis: Key Findings and Modelling Implications
 
-This document presents the core empirical findings derived from the exploratory data analysis of the cleaned Cardekho used car dataset (15,244 records, 13 features) stored in `data/interim/cars_clean.csv`. Every finding is supported by high-resolution visualizations in `reports/figures/` and quantitative evidence in `reports/tables/`.
+These findings come from the exploratory analysis of the cleaned CarDekho dataset (`data/interim/cars_clean.csv`, 15,244 rows, 13 columns). Each finding names the figure in `reports/figures/` and the table in `reports/tables/` it rests on. Shares, ratios and skewness values are computed in `reports/tables/report_key_figures.csv` (by `src/carprice/report_facts.py`), not by hand.
+
+> **Correction note (Phase 8, D-038).** An audit in Phase 8 found that several figures in the earlier version of this file did not match their own tables (for example the transmission medians, fuel means, seller medians, brand counts and the 4-seater median). They have been replaced with the table values below. The conclusions drawn for modelling did not change.
 
 ---
 
-## Part 1: Numbered Summary of Key Findings
+## Part 1: Numbered findings
 
-### 1. Extreme Right-Skew of Price Mandates Logarithmic Transformation
-- **Finding:** The distribution of raw used car selling prices is severely right-skewed with a sample skewness coefficient of **10.11**. While the median vehicle price is **₹5.59 lakh** and 75% of vehicles retail below **₹8.25 lakh**, the upper tail stretches to **₹3.95 crore** (mean ₹7.75 lakh, standard deviation ₹8.95 lakh).
-- **Evidence:** Applying a natural logarithmic transform ($\log(1 + y)$) compresses the tail and reduces skewness to **0.56**, producing a near-Gaussian distribution well-suited for linear and tree-based loss functions.
-- **Supporting Artefacts:** Figure `reports/figures/eda_01_selling_price_raw_vs_log.png`, Table `reports/tables/eda_numeric_summary.csv`.
+### 1. Price is heavily right-skewed, so the model should predict log price
+- **Finding:** Selling price has a skewness of **10.11** [`report_key_figures.csv`]. The median is **₹ 5.59 lakh** and three quarters of cars list below **₹ 8.25 lakh**, but the maximum is **₹ 3.95 crore** (mean ₹ 7.75 lakh, standard deviation ₹ 8.95 lakh) [`eda_numeric_summary.csv`].
+- **Evidence:** `log1p(price)` has a skewness of **0.56**, close to symmetric [`report_key_figures.csv`].
+- **Artefacts:** `reports/figures/eda_01_selling_price_raw_vs_log.png`, `reports/figures/eda_02_dist_selling_price.png`.
 
----
+### 2. Power and engine size are the strongest numeric predictors
+- **Finding:** `max_power` has the strongest rank correlation with price (Spearman **ρ = 0.72**; Pearson **r = 0.76** with log price). Engine displacement follows with **ρ = 0.64** [`eda_spearman_correlation.csv`, `eda_pearson_correlation.csv`].
+- **Evidence:** The binned-median trend lines in the scatter plots rise steeply and non-linearly with power, which suits tree models and a log target.
+- **Artefacts:** `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_21_scatter_price_vs_engine.png`.
 
-### 2. Engine Power and Displacement Are the Strongest Continuous Predictors
-- **Finding:** Maximum rated power (`max_power`) exhibits the single strongest monotonic association with selling price, boasting a Spearman rank correlation coefficient of **$\rho = 0.72$** (Pearson $r = 0.76$ with log price). Engine displacement (`engine`) closely follows with **$\rho = 0.64$**.
-- **Evidence:** Scatter plots and binned median trends reveal a steep, non-linear exponential valuation curve: vehicles generating under 80 bhp trade at a median of ~₹3.5 lakh, whereas premium engines producing over 180 bhp consistently command valuations exceeding ₹20 lakh.
-- **Supporting Artefacts:** Figures `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_21_scatter_price_vs_engine.png`, Table `reports/tables/eda_spearman_correlation.csv`.
+### 3. Automatics are dearer, and the premium survives controlling for power
+- **Finding:** The median automatic lists at **₹ 10,50,000** against **₹ 5,00,000** for a manual [`eda_transmission_medians.csv`], a raw ratio of **2.10** [`report_key_figures.csv`].
+- **Evidence:** Part of that gap is because automatics are more powerful cars. Within each power quartile the automatic premium remains: for example ₹ 4,49,500 vs ₹ 3,40,000 in the lowest quartile (38-74 bhp) and ₹ 16,50,000 vs ₹ 8,75,000 in the highest (118-626 bhp). Mann-Whitney U tests are significant in every quartile (p < 0.001) with rank-biserial effect sizes from **0.26 to 0.61** [`eda_hypothesis_tests.csv`].
+- **Artefacts:** `reports/figures/eda_15_price_by_transmission.png`, `reports/figures/eda_24_interaction_power_transmission.png`.
 
----
+### 4. Price falls steadily with age
+- **Finding:** Age is the main downward driver (Spearman **ρ = -0.48**) [`eda_spearman_correlation.csv`].
+- **Evidence:** For the five highest-volume brands the estimated average annual price loss ranges from **9.39%** (Mahindra) to **12.89%** (Hyundai) [`eda_depreciation_rates.csv`]. Among these five, Toyota has the highest median price, **₹ 12,75,000** [`eda_brand_medians.csv`].
+- **Artefacts:** `reports/figures/eda_18_scatter_price_vs_age.png`, `reports/figures/eda_22_depreciation_curves.png`.
 
-### 3. Substantial Premium for Automatic Transmissions Across All Power Tiers
-- **Finding:** Automatic transmission vehicles command an overall median price of **₹13.00 lakh**, compared to just **₹4.75 lakh** for manual counterparts—a gross ratio of **2.74x**.
-- **Evidence:** To ensure this premium is not merely an artefact of larger engines, a controlled Mann-Whitney U test was performed within each power quartile (Q1: 38–74 bhp, Q2: 74–88 bhp, Q3: 88–118 bhp, Q4: 118–626 bhp). In every tier, automatics maintained a statistically significant premium ($p < 0.001$) with substantial rank-biserial effect sizes ranging from **$r_{rb} = 0.26$ to $0.61$**.
-- **Supporting Artefacts:** Figures `reports/figures/eda_15_price_by_transmission.png`, `reports/figures/eda_24_interaction_power_transmission.png`, Table `reports/tables/eda_hypothesis_tests.csv`.
+### 5. Diesel cars list higher than petrol cars
+- **Finding:** Median diesel price **₹ 7,00,000** (mean ₹ 10.00 lakh) against **₹ 4,60,000** for petrol (mean ₹ 5.73 lakh), a ratio of **1.52**. CNG cars have a median of ₹ 3,70,000 and LPG cars ₹ 1,82,500 [`eda_fuel_medians.csv`, `report_key_figures.csv`].
+- **Evidence:** A Kruskal-Wallis test across diesel, petrol and CNG is significant (H = 2527.5, p < 0.001, effect size 0.32) [`eda_hypothesis_tests.csv`]. The age-by-fuel facets show diesel above petrol at every age.
+- **Artefacts:** `reports/figures/eda_14_price_by_fuel.png`, `reports/figures/eda_25_interaction_age_fuel.png`.
 
----
+### 6. Two brands dominate, and brand medians span two orders of magnitude
+- **Finding:** Maruti (**4,933** cars, **32.36%**) and Hyundai (**2,952**, **19.36%**) together make up **51.73%** of listings [`eda_brand_medians.csv`, `report_key_figures.csv`]. The cleaned data has **31** brands, of which **13** have fewer than 30 listings [`report_key_figures.csv`, `eda_rare_brands.csv`].
+- **Evidence:** Median prices run from ₹ 3,00,000 (Datsun) and ₹ 4,65,000 (Maruti) through ₹ 12,75,000 (Toyota) and ₹ 17,00,000 (Audi) to ₹ 22,87,500 (BMW) and ₹ 50,00,000 (Porsche, 21 cars). Single listings reach ₹ 3.95 crore (Ferrari) [`eda_brand_medians.csv`].
+- **Artefacts:** `reports/figures/eda_08_cat_brand.png`, `reports/figures/eda_13_price_by_brand.png`.
 
-### 4. Vehicle Age Follows Predictable Exponential Depreciation
-- **Finding:** Vehicle age (`vehicle_age`) is the primary downward valuation driver ($\rho = -0.48$ with selling price). Depreciation is steepest during the first four years of vehicle life, moderating into a steady linear decay in log space.
-- **Evidence:** Across the top volume manufacturers (Maruti, Hyundai, Honda, Toyota, Ford), vehicles experience an estimated **8% to 12% average annual price loss** across years 1 through 7. Toyota exhibits exceptional value retention, maintaining a median price of ₹10.5 lakh across its fleet.
-- **Supporting Artefacts:** Figures `reports/figures/eda_18_scatter_price_vs_age.png`, `reports/figures/eda_22_depreciation_curves.png`, Table `reports/tables/eda_depreciation_rates.csv`.
+### 7. Dealer listings are slightly dearer than private ones
+- **Finding:** Median prices are ₹ 5,90,000 for dealers, ₹ 5,40,000 for Trustmark dealers and ₹ 5,10,000 for individuals [`eda_seller_medians.csv`], a dealer/individual ratio of **1.16** [`report_key_figures.csv`].
+- **Evidence:** The difference is statistically significant (Mann-Whitney U, p < 0.001) but the effect is small (rank-biserial **0.18**) [`eda_hypothesis_tests.csv`]. Dealers may stock newer cars; the test does not control for that.
+- **Artefacts:** `reports/figures/eda_16_price_by_seller.png`.
 
----
+### 8. Kilometres driven matter only weakly on their own
+- **Finding:** `km_driven` has a weak negative rank correlation with price (**ρ = -0.17**) [`eda_spearman_correlation.csv`].
+- **Evidence:** The binned trend falls over the lower kilometre range and then flattens. Kilometres are strongly tied to age (ρ = 0.58 between them), so much of their effect is already carried by age.
+- **Artefacts:** `reports/figures/eda_19_scatter_price_vs_km.png`.
 
-### 5. Diesel Powertrains Command a Sizable Market Premium Over Petrol
-- **Finding:** Diesel vehicles trade at a median price of **₹7.00 lakh** (mean ₹9.28 lakh), significantly above petrol vehicles at **₹4.50 lakh** (mean ₹6.29 lakh). CNG vehicles trade at a median of **₹3.60 lakh**, and LPG at **₹2.12 lakh**.
-- **Evidence:** A Kruskal-Wallis test across fuel types confirms significant distributional variance ($H = 1756.2, p < 0.001$). Faceted age analysis shows that while diesel models maintain a higher base value across all model years due to higher original showroom MSRPs, their annual percentage depreciation slope closely mirrors that of petrol vehicles.
-- **Supporting Artefacts:** Figures `reports/figures/eda_14_price_by_fuel.png`, `reports/figures/eda_25_interaction_age_fuel.png`, Tables `reports/tables/eda_fuel_medians.csv`, `reports/tables/eda_hypothesis_tests.csv`.
+### 9. Engine size and power are collinear
+- **Finding:** `engine` and `max_power` correlate strongly (Pearson **r = 0.81**, Spearman **ρ = 0.83**) [`eda_pearson_correlation.csv`, `eda_spearman_correlation.csv`].
+- **Evidence:** VIF is **6.41** for `engine` (R² 0.8439) and **4.56** for `max_power` (R² 0.7806). The other numeric inputs stay below 2.5 (`vehicle_age` 1.43, `km_driven` 1.43, `mileage` 1.96, `seats` 2.27) [`eda_vif_summary.csv`].
+- **Artefacts:** `reports/figures/eda_23_correlation_heatmaps.png`.
 
----
-
-### 6. Extreme Brand Hierarchy and Volume Concentration
-- **Finding:** The market exhibits extreme brand tiering. The top two manufacturers—Maruti (4,948 cars, 32.5%) and Hyundai (2,982 cars, 19.6%)—account for **52.0%** of all market listings.
-- **Evidence:** Medians span an order of magnitude: budget commuter brands (Maruti: ₹4.5 lakh, Tata: ₹4.7 lakh) sit at the base; mid-market stalwarts (Toyota: ₹10.5 lakh, MG: ₹15.8 lakh, Isuzu: ₹16.0 lakh) occupy the middle; European luxury marques (Audi: ₹21.0 lakh, Mercedes-Benz: ₹23.0 lakh, BMW: ₹24.0 lakh) occupy the upper tier; and exotic supercars (Porsche: ₹47.5 lakh, Ferrari: ₹3.95 crore) form the extreme ceiling.
-- **Supporting Artefacts:** Figures `reports/figures/eda_08_cat_brand.png`, `reports/figures/eda_13_price_by_brand.png`, Table `reports/tables/eda_brand_medians.csv`.
-
----
-
-### 7. Commercial Dealership Premium Over Private Individual Sellers
-- **Finding:** Cars sold through commercial dealers command a median price of **₹6.50 lakh** (both standard Dealers and Trustmark Certified Dealers), compared to **₹4.50 lakh** for direct Individual sellers.
-- **Evidence:** A Mann-Whitney U test confirms this difference is statistically significant ($U = 3.96 \times 10^7, p < 0.001$, rank-biserial effect size $r_{rb} = 0.26$). Dealers predominantly inventory newer, lower-mileage vehicles and higher-trim automatic models, adding certified refurbishment value.
-- **Supporting Artefacts:** Figure `reports/figures/eda_16_price_by_seller.png`, Tables `reports/tables/eda_seller_medians.csv`, `reports/tables/eda_hypothesis_tests.csv`.
-
----
-
-### 8. Moderate Odometer Correlation with Non-Linear Plateau
-- **Finding:** Odometer mileage (`km_driven`) displays a weak negative rank correlation ($\rho = -0.17$).
-- **Evidence:** Valuations drop sharply during the initial 0 to 60,000 km interval. Beyond 120,000 km, the price degradation curve flattens significantly, indicating that once a vehicle enters high-mileage territory, condition, mechanical health, and vehicle age outweigh marginal odometer gains.
-- **Supporting Artefacts:** Figure `reports/figures/eda_19_scatter_price_vs_km.png`, Table `reports/tables/eda_spearman_correlation.csv`.
+### 10. Seat count mostly reflects the type of car
+- **Finding:** 7-seaters list at a median of **₹ 8,75,000** against **₹ 5,25,000** for 5-seaters (ratio **1.67**). The dearest groups are 2-seaters (₹ 34,25,000, 7 cars) and 4-seaters (₹ 27,50,000, 76 cars) [`eda_seats_medians.csv`, `report_key_figures.csv`].
+- **Evidence:** Five seats is by far the most common layout (**83.76%** of listings) [`report_key_figures.csv`]. 2- and 4-seaters are mostly sports and luxury cars, and 7-seaters are family MPVs and SUVs, so seats act as a proxy for body type rather than a price driver on their own.
+- **Artefacts:** `reports/figures/eda_12_cat_seats.png`, `reports/figures/eda_17_price_by_seats.png`.
 
 ---
 
-### 9. Collinearity Between Engine Displacement and Max Power
-- **Finding:** Engine displacement and maximum power exhibit substantial collinearity ($r = 0.81, \rho = 0.83$).
-- **Evidence:** Variance Inflation Factor (VIF) analysis shows `engine` with a VIF of **6.41** ($R^2 = 0.8439$) and `max_power` with a VIF of **4.56** ($R^2 = 0.7806$). Other numerical features (`vehicle_age`: 1.43, `km_driven`: 1.43, `mileage`: 1.96, `seats`: 2.27) show negligible inflation ($VIF < 2.5$).
-- **Supporting Artefacts:** Table `reports/tables/eda_vif_summary.csv`.
+## Part 2: What this meant for modelling
 
----
-
-### 10. Multi-Seater Utility Vehicle Premium
-- **Finding:** 7-seater vehicles command a median selling price of **₹8.80 lakh**, significantly outpacing standard 5-seaters (median **₹5.25 lakh**) and 4-seaters (median **₹3.90 lakh**).
-- **Evidence:** 7-seaters in India encompass popular premium family MPVs and ladder-frame SUVs (e.g. Toyota Innova, Mahindra XUV500, Ford Endeavour) equipped with larger diesel powertrains.
-- **Supporting Artefacts:** Figures `reports/figures/eda_12_cat_seats.png`, `reports/figures/eda_17_price_by_seats.png`, Table `reports/tables/eda_seats_medians.csv`.
-
----
-
-## Part 2: Implications for Downstream Machine Learning Modeling
-
-1. **Target Variable Transformation:**
-   - The regression target must be modelled in log-space ($\log(1 + y)$ or `TransformedTargetRegressor`). Predicting raw prices directly would cause linear and distance models to optimize almost exclusively on high-value outliers, compromising accuracy on the 80% mass market.
-2. **Feature Engineering Opportunities (Phase 3):**
-   - *Power-to-Displacement Ratio:* $\text{power\_per\_litre} = \frac{\text{max\_power}}{\text{engine} / 1000}$, capturing engine tuning efficiency and turbocharging.
-   - *Annual Odometer Usage Rate:* $\text{km\_per\_year} = \frac{\text{km\_driven}}{\text{vehicle\_age}}$, distinguishing heavy commercial fleet use from light private driving.
-   - *Brand Equity Tiers:* Grouping 32 automotive marques into structured tiers (Budget, Mid, Premium, Luxury, Ultra-Luxury) to resolve categorical sparsity among low-frequency brands.
-   - *Power $\times$ Transmission Interaction:* Explicitly modeling the interaction term between horsepower and automatic gearboxes.
-3. **Collinearity Mitigation for Linear Baseline:**
-   - Unregularized OLS will suffer variance instability due to the 6.41 VIF between `engine` and `max_power`. L2-regularized Ridge regression and tree-based gradient boosters (XGBoost, LightGBM) must be prioritized.
-4. **Categorical Encoding Strategy:**
-   - High-cardinality features (`model` with 119 levels and `brand` with 32 levels) require One-Hot Encoding for frequent levels combined with Target / Frequency encoding or tree-native categorical handling to prevent dimensionality explosion.
-
+1. **Predict log price.** The model is wrapped in `TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)` (D-009, D-017), so squared-error losses are not dominated by the luxury tail.
+2. **Candidate features, then measured.** The EDA proposed `power_per_litre`, `km_per_year`, brand tiers and a power × automatic interaction. Phase 3 measured each candidate by cross-validation on the training split only: `power_per_litre`, `km_per_year`, `is_luxury_brand` and `age_x_power` were kept; `power_x_automatic` and `log_km_driven` were rejected; brand tiers were not used as a model input (D-013, D-015) [`feature_checks.csv`].
+3. **Collinearity.** Engine and power are collinear (finding 9), which argues for a regularised linear baseline (Ridge) and for tree ensembles, which are not harmed by it.
+4. **Categorical encoding.** `model` has **120** levels and `brand` **31** in the cleaned data [`report_key_figures.csv`]. `model` is target-encoded with internal cross-fitting; rare brands are grouped into "Other" inside each training fold before one-hot encoding (D-014, D-015).

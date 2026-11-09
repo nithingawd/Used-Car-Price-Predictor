@@ -1,0 +1,31 @@
+figure_id,value,unit,formula,sources
+share_brand_maruti_pct,32.36,pct,count(brand=Maruti) / all cleaned rows * 100,eda_brand_medians.csv
+share_brand_hyundai_pct,19.36,pct,count(brand=Hyundai) / all cleaned rows * 100,eda_brand_medians.csv
+share_transmission_type_manual_pct,79.34,pct,count(transmission_type=Manual) / all cleaned rows * 100,eda_transmission_medians.csv
+share_transmission_type_automatic_pct,20.66,pct,count(transmission_type=Automatic) / all cleaned rows * 100,eda_transmission_medians.csv
+share_fuel_type_petrol_pct,49.59,pct,count(fuel_type=Petrol) / all cleaned rows * 100,eda_fuel_medians.csv
+share_fuel_type_diesel_pct,48.16,pct,count(fuel_type=Diesel) / all cleaned rows * 100,eda_fuel_medians.csv
+share_fuel_type_cng_pct,1.96,pct,count(fuel_type=Cng) / all cleaned rows * 100,eda_fuel_medians.csv
+share_fuel_type_lpg_pct,0.29,pct,count(fuel_type=Lpg) / all cleaned rows * 100,eda_fuel_medians.csv
+share_seats_5_pct,83.76,pct,count(seats=5) / all cleaned rows * 100,eda_seats_medians.csv
+share_seats_7_pct,12.48,pct,count(seats=7) / all cleaned rows * 100,eda_seats_medians.csv
+share_top_two_brands_pct,51.73,pct,(count of the two largest brands) / all cleaned rows * 100,eda_brand_medians.csv
+median_ratio_automatic_vs_manual,2.1,ratio,median price (Automatic) / median price (Manual),eda_transmission_medians.csv
+median_ratio_diesel_vs_petrol,1.52,ratio,median price (Diesel) / median price (Petrol),eda_fuel_medians.csv
+median_ratio_dealer_vs_individual,1.16,ratio,median price (Dealer) / median price (Individual),eda_seller_medians.csv
+median_ratio_7_vs_5,1.67,ratio,median price (7) / median price (5),eda_seats_medians.csv
+test_mae_inr_reduction_vs_ridge_pct,18.3,pct,(mae_inr ridge - mae_inr final) / mae_inr ridge * 100,test_metrics.csv
+test_rmse_log_reduction_vs_ridge_pct,12.39,pct,(rmse_log ridge - rmse_log final) / rmse_log ridge * 100,test_metrics.csv
+test_within_10pct_gain_vs_ridge_points,8.04,pct_points,within_10pct final - within_10pct ridge,test_metrics.csv
+test_mae_inr_reduction_vs_dummy_pct,75.43,pct,(mae_inr dummy - mae_inr final) / mae_inr dummy * 100,test_metrics.csv
+test_rmse_log_reduction_vs_dummy_pct,75.52,pct,(rmse_log dummy - rmse_log final) / rmse_log dummy * 100,test_metrics.csv
+test_within_10pct_gain_vs_dummy_points,36.54,pct_points,within_10pct final - within_10pct dummy,test_metrics.csv
+clean_brand_count,31.0,count,distinct brand values,data/interim/cars_clean.csv
+clean_model_count,120.0,count,distinct model values,data/interim/cars_clean.csv
+train_brand_count,30.0,count,distinct brand values,data/processed/train.csv
+train_model_count,119.0,count,distinct model values,data/processed/train.csv
+skewness_raw_price,10.05,skewness,sample skewness of price (pandas Series.skew),data/raw/cardekho_dataset.csv
+skewness_raw_log1p_price,0.57,skewness,sample skewness of log1p_price (pandas Series.skew),data/raw/cardekho_dataset.csv
+skewness_clean_price,10.11,skewness,sample skewness of price (pandas Series.skew),data/interim/cars_clean.csv
+skewness_clean_log1p_price,0.56,skewness,sample skewness of log1p_price (pandas Series.skew),data/interim/cars_clean.csv
+rare_brand_count,13.0,count,brands with fewer than 30 cleaned rows,eda_rare_brands.csv

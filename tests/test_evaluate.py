@@ -1,13 +1,10 @@
 """Tests for evaluate.py: metric functions on hand-computed examples, plus output checks."""
 
-import json
 from pathlib import Path
-import re
 
 import numpy as np
 import pandas as pd
 import pytest
-import yaml
 
 from carprice.config import get_config
 from carprice.evaluate import (
@@ -28,6 +25,7 @@ from carprice.evaluate import (
     within_tolerance,
 )
 from carprice.formatting import format_inr_indian, format_lakh
+from carprice.provenance import load_sources, notebook_markdown, unsupported_numbers
 
 # Hand-computed example: errors +10, -20, +30 on prices 100, 200, 300.
 #   MAE = 60/3 = 20;  RMSE = sqrt((100 + 400 + 900)/3) = sqrt(466.67) = 21.6025
@@ -167,50 +165,10 @@ def test_indian_rupee_formatting() -> None:
 # Acceptance: no number in the written report may be absent from the tables
 # ---------------------------------------------------------------------------
 
-NUMBER_PATTERN = re.compile(r"\d[\d,]*(?:\.\d+)?")
-DECISION_ID_PATTERN = re.compile(r"D-\d+")
-SMALL_INTEGER_LIMIT = 12  # list numbering, "Phase 5", "5-fold", "Q1" and similar
-
-
-def _numbers_in(value: object) -> list[float]:
-    """Every number in a cell, config leaf or string."""
-    if isinstance(value, bool):
-        return []
-    if isinstance(value, int | float):
-        return [] if np.isnan(value) else [float(value)]
-    if isinstance(value, dict):
-        return [n for item in value.values() for n in _numbers_in(item)]
-    if isinstance(value, list):
-        return [n for item in value for n in _numbers_in(item)]
-    return [float(m.replace(",", "")) for m in NUMBER_PATTERN.findall(str(value))]
-
-
-def _allowed_numbers() -> np.ndarray:
-    """Numbers in reports/tables/*.csv, the model card and config, plus their % and lakh forms."""
-    config = get_config()
-    found: list[float] = []
-    for path in config.paths.tables_dir.glob("*.csv"):
-        table = pd.read_csv(path)
-        found += _numbers_in(list(table.columns))
-        found += [n for cell in table.to_numpy().ravel() for n in _numbers_in(cell)]
-    found += _numbers_in(json.loads((config.paths.models_dir / "model_card.json").read_text()))
-    found += _numbers_in(yaml.safe_load(Path("configs/config.yaml").read_text(encoding="utf-8")))
-    base = np.abs(np.array(found))
-    return np.concatenate([base, base * 100, base / 1e5])
-
 
 def _unsupported_numbers(text: str) -> list[str]:
-    """Numbers in text that do not match any allowed number at the precision written."""
-    allowed = _allowed_numbers()
-    missing = []
-    for token in NUMBER_PATTERN.findall(DECISION_ID_PATTERN.sub("", text)):
-        value = float(token.replace(",", ""))
-        decimals = len(token.split(".")[1]) if "." in token else 0
-        if decimals == 0 and value <= SMALL_INTEGER_LIMIT:
-            continue
-        if not np.any(np.isclose(np.round(allowed, decimals), value, atol=1e-9)):
-            missing.append(token)
-    return missing
+    """Numbers in text that match no saved table, model file or config value."""
+    return unsupported_numbers(text, load_sources(Path(".")))
 
 
 def test_evaluation_summary_numbers_come_from_tables() -> None:
@@ -221,10 +179,7 @@ def test_evaluation_summary_numbers_come_from_tables() -> None:
 
 def test_notebook_03_markdown_numbers_come_from_tables() -> None:
     """Every number in notebook 03's markdown cells exists in a saved table or config."""
-    notebook = json.loads(Path("notebooks/03_model_evaluation.ipynb").read_text(encoding="utf-8"))
-    text = "\n".join(
-        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "markdown"
-    )
+    text = notebook_markdown(Path("notebooks/03_model_evaluation.ipynb"))
     assert _unsupported_numbers(text) == []
 
 
