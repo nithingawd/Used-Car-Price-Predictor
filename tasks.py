@@ -29,6 +29,19 @@ def python_exe() -> str:
     return str(VENV_PYTHON if VENV_PYTHON.exists() else sys.executable)
 
 
+def child_env() -> dict[str, str]:
+    """Environment for child processes.
+
+    MSYS2's GNU make drops USERPROFILE and HOMEDRIVE when it starts Windows programs, and
+    Python, matplotlib and Streamlit then cannot find a home folder. Restore USERPROFILE
+    from HOME in that case (D-037).
+    """
+    env = dict(os.environ)
+    if os.name == "nt" and "USERPROFILE" not in env and env.get("HOME"):
+        env["USERPROFILE"] = env["HOME"]
+    return env
+
+
 def run_command(cmd: list[str]) -> int:
     """Run a command from the project root and return its exit code.
 
@@ -39,7 +52,7 @@ def run_command(cmd: list[str]) -> int:
         int: Process return code.
     """
     logger.info("run: %s", " ".join(cmd))
-    return subprocess.run(cmd, cwd=PROJECT_ROOT, check=False).returncode
+    return subprocess.run(cmd, cwd=PROJECT_ROOT, env=child_env(), check=False).returncode
 
 
 def run_python_code(code: str, *args: str) -> int:
@@ -145,9 +158,19 @@ def predict() -> int:
     return run_module("carprice.prediction_reports")
 
 
+def facts() -> int:
+    """Phase 8: derived figures quoted in the report (reports/tables/report_key_figures.csv)."""
+    return run_module("carprice.report_facts")
+
+
+def notebooks() -> int:
+    """Re-execute the three notebooks in place (see scripts/run_notebooks.py)."""
+    return run_command([python_exe(), "scripts/run_notebooks.py"])
+
+
 def run_all() -> int:
-    """Run the full pipeline (Phases 1 to 6) in order, stopping at the first failure."""
-    for step in (clean_data, eda, split, train, evaluate, predict):
+    """Run the full pipeline (Phases 1 to 6, plus report figures) in order; stop on failure."""
+    for step in (clean_data, eda, split, train, evaluate, predict, facts):
         code = step()
         if code != 0:
             logger.error("step %s failed with exit code %d", step.__name__, code)
@@ -193,6 +216,8 @@ TARGETS: dict[str, Callable[[], int]] = {
     "train": train,
     "evaluate": evaluate,
     "predict": predict,
+    "facts": facts,
+    "notebooks": notebooks,
     "all": run_all,
     "app": app,
     "test": test,

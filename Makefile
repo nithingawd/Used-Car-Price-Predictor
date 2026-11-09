@@ -2,7 +2,7 @@
 # Phony targets always run their step; the file rules below only build what is missing,
 # so `make train`, `make evaluate` or `make test` work on a fresh clone in any order.
 
-.PHONY: all setup clean clean-data eda split train evaluate predict app test coverage lint report
+.PHONY: all setup clean clean-data eda split train evaluate predict facts notebooks app test coverage lint report
 
 PYTHON := $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,$(if $(wildcard .venv/bin/python),.venv/bin/python,python))
 
@@ -36,6 +36,12 @@ evaluate: $(PIPELINE)
 
 predict: $(PIPELINE)
 	$(PYTHON) tasks.py predict
+
+facts:
+	$(PYTHON) tasks.py facts
+
+notebooks: $(PIPELINE)
+	$(PYTHON) tasks.py notebooks
 
 app: $(PIPELINE)
 	$(PYTHON) tasks.py app
