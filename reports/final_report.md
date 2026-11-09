@@ -1,7 +1,9 @@
 ---
 title: "Used Car Price Prediction System"
 subtitle: "Final report: data cleansing, exploratory analysis, model building, evaluation and GUI"
-author: "[Student name and USN]"
+author:
+  - "Nithin Gowda R S - 1RV24CS174"
+  - "Nikhilesh - 1RV24CS176"
 date: "2026-11-09"
 lang: en-GB
 ---

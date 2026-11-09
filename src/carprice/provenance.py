@@ -8,7 +8,8 @@ value when the source value, rounded to the number of decimals written, equals i
 (x100), lakh (/1e5) and crore (/1e7) forms of a source value are accepted, because prices
 are stored in rupees and shares as fractions in some tables.
 
-Ignored when scanning prose: inline code and code blocks (file names, commands), link and
+Ignored when scanning prose: a leading YAML title block (title, authors and their USNs),
+inline code and code blocks (file names, commands), link and
 image targets, decision ids such as D-014, ISO dates, and whole numbers up to
 ``SMALL_INTEGER_LIMIT`` (list numbering, "5-fold", "Q1", "Phase 8").
 """
@@ -31,6 +32,7 @@ NUMBER_PATTERN = re.compile(r"\d(?:[\d,]*\d)?(?:\.\d+)?")
 SMALL_INTEGER_LIMIT = 12
 UNIT_SCALES = (1.0, 100.0, 1e-5, 1e-7)
 IGNORED_PATTERNS = (
+    re.compile(r"\A---\n.*?\n---(?:\n|\Z)", re.DOTALL),
     re.compile(r"```.*?```", re.DOTALL),
     re.compile(r"`[^`\n]*`"),
     re.compile(r"\]\([^)]*\)"),

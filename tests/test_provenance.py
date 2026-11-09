@@ -164,3 +164,16 @@ def test_volatile_measurements_are_not_sources(tmp_path: Path) -> None:
         "50.98",
         "27.221",
     ]
+
+
+def test_title_block_is_not_scanned() -> None:
+    """Author USNs in the YAML title block are metadata, not quoted results."""
+    text = '---\nauthor:\n  - "Student - 1RV24CS174"\n---\n\nScore 777.'
+    assert quoted_numbers(text) == ["777"]
+
+
+def test_title_block_is_skipped_in_the_appendix() -> None:
+    """The appendix scans paragraph by paragraph; the title block must still be skipped."""
+    text = '---\nauthor:\n  - "Student - 1RV24CS176"\n---\n\nScore 0.25 [`config.yaml`].'
+    table = number_source_table(text, TOY_SOURCES)
+    assert list(table["number"]) == ["0.25"]

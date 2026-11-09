@@ -863,7 +863,7 @@ Entries are numbered D-001 to D-044 in the order they were made; each heading is
 
 - **Date / Phase:** 2026-11-09 / Phase 8
 - **Not delivered or delivered differently:**
-  1. *Report author line:* `reports/final_report.md` has the placeholder "[Student name and USN]"; only the student can fill it in.
+  1. *Report author line:* delivered after review. The student supplied the authors, Nithin Gowda R S (1RV24CS174) and Nikhilesh (1RV24CS176), who replaced the placeholder; the number checker now skips the report's YAML title block so USNs are not read as quoted results.
   2. *PDF route:* produced through pandoc HTML and Chrome rather than pandoc with LaTeX (D-040).
   3. *Number sources:* include `reports/predictions/`, `models/` and the config as well as `reports/tables/` (D-039).
   4. *pre-commit hooks* (optional in A2): not set up; `make lint` and `make test` are the documented gates.
@@ -886,6 +886,6 @@ Entries are numbered D-001 to D-044 in the order they were made; each heading is
 
 ## Open questions for the student
 
-1. **Author line.** Replace "[Student name and USN]" at the top of `reports/final_report.md`, then run `make report` to refresh the `.docx` and `.pdf`.
+1. **Author line.** Resolved: Nithin Gowda R S (1RV24CS174) and Nikhilesh (1RV24CS176) are now the report's authors.
 2. **Publishing.** Push the commits and the `v1.0` tag to GitHub (`git push origin main --tags`) when you are ready; nothing has been pushed.
 3. **Cosmetic GUI fixes (optional).** Shorten the "Why this price" axis caption so it is not clipped at desktop width, and consider an interactive SHAP chart instead of the static image (D-042 item 8).
