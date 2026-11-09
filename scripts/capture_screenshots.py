@@ -12,7 +12,10 @@ import argparse
 import asyncio
 import base64
 import json
+import logging
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import time
@@ -20,6 +23,7 @@ import urllib.request
 
 import websockets
 
+# Standard install locations, tried after the CHROME_PATH environment variable and PATH lookup.
 CHROME_CANDIDATES = [
     Path("C:/Program Files/Google/Chrome/Application/chrome.exe"),
     Path("C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"),
@@ -36,6 +40,9 @@ WIDTHS = {"desktop": 1440, "narrow": 800}
 # The app follows the browser colour scheme by default (D-036); dark shots get a "_dark" suffix.
 SCHEMES = {"light": "", "dark": "_dark"}
 DEBUG_PORT = 9333
+BROWSER_NAMES = ("chrome", "google-chrome", "chromium", "msedge")
+
+logger = logging.getLogger("capture_screenshots")
 READY_SCRIPT = """
 (() => {
   const app = document.querySelector('[data-testid="stApp"]');
@@ -119,11 +126,24 @@ async def capture(tools: DevTools, url: str, width: int, scheme: str, out_path: 
     out_path.write_bytes(base64.b64decode(shot["data"]))
 
 
+def find_browser() -> Path:
+    """Locate Chrome or Edge: $CHROME_PATH, then PATH, then the standard install folders.
+
+    Raises:
+        FileNotFoundError: if no Chromium-based browser is found.
+    """
+    override = os.environ.get("CHROME_PATH")
+    found = [Path(override)] if override else []
+    found += [Path(p) for name in BROWSER_NAMES if (p := shutil.which(name))]
+    browser = next((p for p in [*found, *CHROME_CANDIDATES] if p.exists()), None)
+    if browser is None:
+        raise FileNotFoundError("No Chrome or Edge found; set CHROME_PATH to its executable")
+    return browser
+
+
 def start_browser(profile: str) -> subprocess.Popen:
     """Launch headless Chrome (or Edge) with remote debugging."""
-    browser = next((p for p in CHROME_CANDIDATES if p.exists()), None)
-    if browser is None:
-        raise FileNotFoundError("No Chrome or Edge executable found")
+    browser = find_browser()
     return subprocess.Popen(
         [
             str(browser),
@@ -164,7 +184,7 @@ async def run(base_url: str, out_dir: Path) -> list[Path]:
                     url = f"{base_url.rstrip('/')}/{path}"
                     await capture(tools, url, width, scheme, target)
                     saved.append(target)
-                    print(f"saved {target}")
+                    logger.info("saved %s", target)
         await tools.call("Page.navigate", url="about:blank")  # close the app session cleanly
         await asyncio.sleep(1.0)
     return saved
@@ -172,6 +192,7 @@ async def run(base_url: str, out_dir: Path) -> list[Path]:
 
 def main() -> None:
     """Parse arguments, start the browser, capture, and always close the browser."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base-url", default="http://localhost:8765")
     parser.add_argument("--out-dir", type=Path, default=Path("reports/figures"))
