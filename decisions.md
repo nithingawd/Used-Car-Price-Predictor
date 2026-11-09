@@ -2,6 +2,57 @@
 
 This log records every non-trivial design, modeling, cleaning, and architectural choice made during the development of the Used Car Price Prediction System. It serves as auditable evidence for academic grading, viva defence, and reproducibility.
 
+## Contents
+
+Entries are numbered D-001 to D-044 in the order they were made; each heading is `### D-NNN: title`. Corrections to earlier entries are added as dated "Revision" or "Correction" lines inside the original entry, so the history stays visible.
+
+| Id | Phase | One-line summary |
+|---|---|---|
+| [D-001](#d-001) | 0 | Fixed tech stack and pinned environment |
+| [D-002](#d-002) | 0 | Modular repository; raw data read-only |
+| [D-003](#d-003) | 1 | Drop 167 exact duplicates; keep same-spec rows with different prices |
+| [D-004](#d-004) | 1 | Cap km_driven at 5,00,000 with a flag |
+| [D-005](#d-005) | 1 | Recode four 'Electric' Camry hybrids to Petrol |
+| [D-006](#d-006) | 1 | Impute two zero-seat rows from the brand/model mode |
+| [D-007](#d-007) | 1 | Keep genuine luxury cars; evaluate by segment |
+| [D-008](#d-008) | 1 | Drop identifier columns; validate schema at each stage |
+| [D-009](#d-009) | 2 | Model log1p(price) |
+| [D-010](#d-010) | 2 | Feature proposals from the EDA (measured later in D-013) |
+| [D-011](#d-011) | 2 | Non-parametric hypothesis tests with effect sizes |
+| [D-012](#d-012) | 3 | Stratified 80/20 split on price quintiles, seed 42 |
+| [D-013](#d-013) | 3 | Keep four engineered features by measured CV gain |
+| [D-014](#d-014) | 3 | Target-encode `model` (better for XGBoost) |
+| [D-015](#d-015) | 3 | Group rare brands per fold; brand tiers for reporting only |
+| [D-016](#d-016) | 4 | Ten-algorithm shortlist |
+| [D-017](#d-017) | 4 | TransformedTargetRegressor around the whole pipeline |
+| [D-018](#d-018) | 4 | Optuna TPE, 35 trials per booster, precomputed folds |
+| [D-019](#d-019) | 4 | Lowest CV log RMSE wins: tuned XGBoost |
+| [D-020](#d-020) | 4 | 80% interval from out-of-fold residual quantiles |
+| [D-021](#d-021) | 4 | Phase 4 consistency review and corrections |
+| [D-022](#d-022) | 4 | Pre-split steps assessed for leakage |
+| [D-023](#d-023) | 5 | Metrics and headline fixed before test scoring |
+| [D-024](#d-024) | 5 | `km_was_capped` is not a model input; left unchanged |
+| [D-025](#d-025) | 5 | Test set scored once; no post-hoc changes |
+| [D-026](#d-026) | 5 | Known limitations from the test evaluation |
+| [D-027](#d-027) | 5 | Phase 5 implementation choices |
+| [D-028](#d-028) | 5 | Resolution of the Phase 4 and 5 open questions |
+| [D-029](#d-029) | 6 | Prediction input validation rules |
+| [D-030](#d-030) | 6 | Strict brand/model consistency |
+| [D-031](#d-031) | 6 | Prediction outputs, worked-example rules, timing method |
+| [D-032](#d-032) | 7 | GUI page structure and architecture |
+| [D-033](#d-033) | 7 | Native TreeSHAP in the app; response time |
+| [D-034](#d-034) | 7 | Rare and luxury cars in the UI |
+| [D-035](#d-035) | 7 | Design system implementation and deviations |
+| [D-036](#d-036) | 7 | Dark mode |
+| [D-037](#d-037) | 8 | Phase 8 reproducibility audit and build fixes |
+| [D-038](#d-038) | 8 | EDA notebook display fix; audit of Phase 1 and 2 figures |
+| [D-039](#d-039) | 8 | Number provenance checks and derived-figure table |
+| [D-040](#d-040) | 8 | Report export toolchain |
+| [D-041](#d-041) | 8 | Final model and why |
+| [D-042](#d-042) | 8 | Final list of known limitations |
+| [D-043](#d-043) | 8 | Scope not delivered, and why |
+| [D-044](#d-044) | 8 | Resolution of the remaining open questions |
+
 ---
 
 ## Assumptions
@@ -15,6 +66,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 ---
 
 ## Decisions
+
+<a id="d-001"></a>
 
 ### D-001: Selection of Tech Stack and Environment Configuration
 
@@ -37,6 +90,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-002"></a>
+
 ### D-002: Repository Layout, Modular Architecture, and Read-Only Raw Data
 
 - **Date / Phase:** 2026-11-07 / Phase 0
@@ -50,6 +105,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Layout defined in root and tracked via Git; directories protected against direct overwrites.
 
 ---
+
+<a id="d-003"></a>
 
 ### D-003: Deduplication Strategy (Dropping Exact Duplicates Post Identifier Removal)
 
@@ -66,6 +123,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-004"></a>
+
 ### D-004: Treatment of Extreme Odometer Outliers (Cap at 500,000 km)
 
 - **Date / Phase:** 2026-11-07 / Phase 1
@@ -80,6 +139,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Configured via `cleaning.km_cap` in `configs/config.yaml` and handled by `treat_km_outliers()`.
 
 ---
+
+<a id="d-005"></a>
 
 ### D-005: Recoding of Electric Fuel Labels to Petrol Hybrids
 
@@ -96,6 +157,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-006"></a>
+
 ### D-006: Modal Imputation of Invalid Seat Counts (seats = 0)
 
 - **Date / Phase:** 2026-11-07 / Phase 1
@@ -111,6 +174,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-007"></a>
+
 ### D-007: Retention of High-End Luxury Cars and Supercars
 
 - **Date / Phase:** 2026-11-07 / Phase 1
@@ -125,6 +190,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-008"></a>
+
 ### D-008: Redundant Identifier Stripping and Schema Gatekeeping
 
 - **Date / Phase:** 2026-11-07 / Phase 1
@@ -138,6 +205,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Implemented in `drop_identifier_columns()` and `validate_schema()`.
 
 ---
+
+<a id="d-009"></a>
 
 ### D-009: Target Transformation to Logarithmic Price (log1p)
 
@@ -154,6 +223,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-010"></a>
+
 ### D-010: Feature Engineering Proposals Derived from Exploratory Analysis
 
 - **Date / Phase:** 2026-11-07 / Phase 2
@@ -169,9 +240,12 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Reason:** Empirical evidence shows automatic gearboxes command a statistically significant 2.74x premium ($p < 0.001$) across all power bands; engine displacement and power exhibit collinearity (VIF 6.41 and 4.56); and rare brands cause sparse high-dimensional one-hot matrices unless consolidated into structured market tiers.
 - **Evidence:** `reports/figures/eda_20_scatter_price_vs_power.png`, `reports/figures/eda_24_interaction_power_transmission.png`, `reports/tables/eda_vif_summary.csv`, `reports/tables/eda_brand_medians.csv`.
 - **Impact / how to reverse:** Implemented as a leak-free scikit-learn transformer in `src/carprice/features.py` during Phase 3.
+- **Correction (2026-11-09, see D-038):** two figures above did not match their tables. The cleaned data have 31 brands, 13 of them with fewer than 30 rows (`report_key_figures.csv`, `eda_rare_brands.csv`), not 32 and 14. The raw median automatic/manual price ratio is 2.10 (`eda_transmission_medians.csv`), not 2.74; the premium within power quartiles is confirmed by `eda_hypothesis_tests.csv`. The decision is unaffected.
 - **Revision (2026-11-08, see D-021):** these were *proposals*. Phase 3 screening (D-013) decided the final set. `power_x_automatic` was measured and rejected (ΔRMSE 0.0000). `brand_tier` was never added to the pipeline; brand information reaches the model through one-hot `brand` (rare levels grouped, D-015) and the `is_luxury_brand` flag.
 
 ---
+
+<a id="d-011"></a>
 
 ### D-011: Statistical Hypothesis Testing Framework and Non-Parametric Metrics
 
@@ -187,6 +261,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-012"></a>
+
 ### D-012: Stratified Train/Test Split (80/20 on Price Quintiles with Seed 42)
 
 - **Date / Phase:** 2026-11-07 / Phase 3
@@ -201,6 +277,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Configured in `configs/config.yaml` (`splitting.test_size: 0.2`, `splitting.stratify_by: selling_price`, `splitting.stratify_bins: 5`, `project.random_seed: 42`) and managed by `create_train_test_split()`. Re-running `python tasks.py split` reproduces `split_indices.json` byte-for-byte (verified 2026-11-08, D-021).
 
 ---
+
+<a id="d-013"></a>
 
 ### D-013: Candidate Feature Engineering Evaluations and Selection Decisions
 
@@ -220,6 +298,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Implemented in `DomainFeatureEngineer` inside `src/carprice/features.py`; re-run with `python tasks.py split`.
 
 ---
+
+<a id="d-014"></a>
 
 ### D-014: High-Cardinality Model Feature Encoding (Cross-Validated TargetEncoder)
 
@@ -243,10 +323,12 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-015"></a>
+
 ### D-015: Rare-Brand Handling and the Brand-Tier Mapping
 
 - **Date / Phase:** 2026-11-07 / Phase 3 (corrected 2026-11-08, see D-021)
-- **Context:** The cleaned dataset features 31 automotive brands, 14 of which have $< 30$ listings.
+- **Context:** The cleaned dataset features 31 automotive brands, 13 of which have $< 30$ listings (corrected from 14 in Phase 8, D-038; `eda_rare_brands.csv`).
 - **Options considered:**
   - (a) Unregularized one-hot dummies for every brand.
   - (b) Group rare brands into a generic "Other" level, learned per training fold.
@@ -259,6 +341,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Change `features.rare_category_min_frequency` and re-run `python tasks.py train`.
 
 ---
+
+<a id="d-016"></a>
 
 ### D-016: Algorithm Shortlist and Justification
 
@@ -282,6 +366,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-017"></a>
+
 ### D-017: Target Transformation Architecture (TransformedTargetRegressor)
 
 - **Date / Phase:** 2026-11-08 / Phase 4
@@ -296,6 +382,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Configured in `fit_and_persist_pipelines()` in `src/carprice/train.py`.
 
 ---
+
+<a id="d-018"></a>
 
 ### D-018: Hyperparameter Tuning Budget, Search Spaces, and Fold Precomputation
 
@@ -312,6 +400,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-019"></a>
+
 ### D-019: Final Model Selection Rule and Winning Estimator
 
 - **Date / Phase:** 2026-11-08 / Phase 4
@@ -327,6 +417,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-020"></a>
+
 ### D-020: Empirical Out-of-Fold Residual Quantile Method for 80% Prediction Intervals
 
 - **Date / Phase:** 2026-11-08 / Phase 4
@@ -340,6 +432,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** Documented in model card and consumed by `predict.py` and GUI in Phases 5 & 6.
 
 ---
+
+<a id="d-021"></a>
 
 ### D-021: Phase 4 Consistency Review and Corrections
 
@@ -360,6 +454,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-022"></a>
+
 ### D-022: Pre-Split Steps That Use the Whole Dataset (Leakage Risk Assessment)
 
 - **Date / Phase:** 2026-11-08 / Phase 4 review
@@ -374,6 +470,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** To remove finding 1 entirely, move seat imputation into the Pipeline as a fitted transformer and retrain; expected effect on metrics is nil (2 rows).
 
 ---
+
+<a id="d-023"></a>
 
 ### D-023: Evaluation Metrics and Headline Metric (written before opening test.csv)
 
@@ -395,6 +493,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-024"></a>
+
 ### D-024: `km_was_capped` Flag Is Not Used by the Model (found before test evaluation)
 
 - **Date / Phase:** 2026-11-08 / Phase 5, before opening test.csv
@@ -407,6 +507,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-025"></a>
+
 ### D-025: One-Time Test-Set Scoring and Post-Hoc Change Policy
 
 - **Date / Phase:** 2026-11-08 / Phase 5, task 5.2
@@ -418,6 +520,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** not reversible by design; the test set is now spent for model selection purposes.
 
 ---
+
+<a id="d-026"></a>
 
 ### D-026: Known Limitations of the Final Model (from the test evaluation)
 
@@ -437,6 +541,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-027"></a>
+
 ### D-027: Phase 5 Implementation Choices
 
 - **Date / Phase:** 2026-11-08 / Phase 5
@@ -454,6 +560,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-028"></a>
+
 ### D-028: Resolution of the Phase 4 and Phase 5 Open Questions
 
 - **Date / Phase:** 2026-11-08 / after Phase 5 (student answers)
@@ -468,6 +576,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Effect on accuracy:** none. The final model, its test results (D-025) and all Phase 3 to 5 tables are unchanged.
 
 ---
+
+<a id="d-029"></a>
 
 ### D-029: Prediction Input Validation Rules
 
@@ -490,6 +600,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-030"></a>
+
 ### D-030: Enforcing Brand/Model Consistency
 
 - **Date / Phase:** 2026-11-08 / Phase 6, task 6.3
@@ -506,6 +618,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-031"></a>
+
 ### D-031: Phase 6 Prediction Outputs, Example Selection and Timing Method
 
 - **Date / Phase:** 2026-11-08 / Phase 6, tasks 6.5 to 6.8
@@ -521,6 +635,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Impact / how to reverse:** settings in the `prediction:` block of `config.yaml`; re-run `python tasks.py predict`.
 
 ---
+
+<a id="d-032"></a>
 
 ### D-032: GUI Page Structure and Architecture
 
@@ -542,6 +658,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-033"></a>
+
 ### D-033: SHAP in the App and Response Time
 
 - **Date / Phase:** 2026-11-08 / Phase 7
@@ -551,6 +669,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Evidence:** `app/Home.py` (`run_estimate`, `why_panel`), `src/carprice/insights.py`.
 
 ---
+
+<a id="d-034"></a>
 
 ### D-034: Treatment of Rare and Luxury Cars in the UI
 
@@ -563,6 +683,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Why:** D-026 showed these groups are where the model is least reliable. Warning beside the number, in words, follows A7's rule never to rely on colour alone and avoids silently over-trusting the estimate.
 
 ---
+
+<a id="d-035"></a>
 
 ### D-035: Design System Implementation and Deviations from A7 and the Guideline
 
@@ -578,6 +700,8 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 - **Screenshots:** `scripts/capture_screenshots.py` (new folder `scripts/`) drives headless Chrome over the DevTools protocol, using the `websockets` package already installed with Streamlit. It waits until every Plotly chart has drawn and the page is stable, then saves `reports/figures/gui_<page>_<desktop|narrow>.png` at 1440 and 800 px. Chrome's own `--screenshot` flag captured only Streamlit's loading skeleton. When the script closes Chrome, Windows asyncio may log a `ConnectionResetError` to the *server* console. That noise comes from the tool, not the app, and the script now leaves the page before closing.
 
 ---
+
+<a id="d-036"></a>
 
 ### D-036: Dark Mode for the GUI
 
@@ -620,7 +744,144 @@ This log records every non-trivial design, modeling, cleaning, and architectural
 
 ---
 
+<a id="d-037"></a>
+
+### D-037: Phase 8 Reproducibility Audit and Build Fixes
+
+- **Date / Phase:** 2026-11-09 / Phase 8, task 8.1
+- **Context:** The brief asks for `make setup clean train evaluate test` in a fresh clone with a fresh environment, a `make all` and `make app` target, a comparison with the saved results, coverage of `src/` (aim 80%), and a sweep for absolute paths, prints, TODOs and unused imports.
+- **Environment:** Windows 11, `Python 3.11.9` from `py -3.11`, a new `.venv` built by `make setup`. Windows has no native `make`; the audit used `GNU Make 4.4.1` from MSYS2 (`C:\msys64\usr\bin\make.exe`). `python tasks.py <target>` is the equivalent everywhere and is what the Makefile calls.
+- **"clean" in the brief's command:** the Makefile's `clean` deletes caches and generated data (never the raw CSV). With the prerequisites added below, `make train` then rebuilds the cleaned data and split first, so the brief's command works whichever meaning of "clean" was intended.
+- **Failures found and fixed (evidence: `reports/tables/reproducibility_runs.csv`, `reports/reproducibility_check.md`):**
+  1. *`make train` failed on a fresh clone* (`FileNotFoundError: data/processed/train.csv`): nothing built the cleaned data or split first. **Fix:** file rules in the Makefile (`cars_clean.csv` → `train.csv` → `final_pipeline.joblib`) so `train`, `evaluate`, `predict`, `test` and `app` build what is missing; new targets `all`, `facts`, `notebooks`, `coverage`, `report`.
+  2. *`make test` raised 3 errors in Streamlit's AppTest* ("Could not determine home directory"): MSYS2's make drops `USERPROFILE` and `HOMEDRIVE` when it starts Windows programs. **Fix:** `tasks.py` passes child processes an environment with `USERPROFILE` restored from `HOME` when it is missing.
+  3. *`make` retrained the model before `test` and again before `predict`:* `test_run_cleaning_end_to_end` rewrote `data/interim/cars_clean.csv`, making it newer than the split. **Fix:** the test writes to `tmp_path`; `write_csv_if_changed()` (new, in `data.py`) leaves cleaned data and split files untouched when their content is unchanged, so re-running notebook 01 no longer triggers a retrain either.
+  4. *`eda_26_luxury_segment_outliers.png` differed between runs:* seaborn's strip-plot jitter used numpy's unseeded global generator. **Fix:** seeded with the project seed for that call only, then the generator state is restored.
+  5. *`worked_examples.csv` text differed:* the Phase 7 label change ("Car model") had never been regenerated into the Phase 6 files. **Fix:** regenerated; every number is unchanged.
+- **Tolerance and result:** numeric columns must agree within relative 1e-6 / absolute 1e-9, text columns exactly, PNG figures byte for byte; columns that record run time, timestamps or the git commit are skipped (`scripts/compare_runs.py`). The first clean clone matched the committed results in 99 of 102 files with a largest numeric difference of 0.0; the three differences were items 4 and 5 above and `report_key_figures.csv`, which is new in this phase (`reports/tables/reproducibility_comparison.csv`). The retrained model selected the same parameters and CV score (0.1654).
+- **Tuning time-out risk:** each Optuna study also has `models.timeout_seconds` (3600). If a much slower machine reached it, fewer than 35 trials would run and the chosen parameters could differ. Training took about 20 minutes in total on the audit laptop, far from the limit, so the setting was left unchanged and is recorded here.
+- **Coverage:** 53.8% of `src/carprice` before this phase, 90.4% after (`reports/tables/coverage_summary.csv`). The new `tests/test_pipeline_runs.py` runs the audit, EDA, benchmark, tuning, final fit, evaluation, explainability and prediction-report code on real data with every output folder redirected to a temporary directory, and checks that the audit, EDA and what-if tables regenerate identically. Evaluation code runs on training rows, never on the locked test set (D-025).
+- **Lint:** `ruff check` and `ruff format --check` now run on the whole repository, notebooks included (previously only `src` and `tests`). Notebooks may import after `sys.path` is set (`E402` ignored for `notebooks/*.ipynb` only).
+- **Sweep:** no TODO or FIXME comments; ruff reports no unused imports anywhere. `print` was replaced by logging in `tasks.py` and `scripts/capture_screenshots.py`; one `print` remains deliberately in `prediction_reports.py`, where a timing subprocess returns its result as JSON on standard output. The only absolute paths are standard browser install folders in `capture_screenshots.py`, now tried after `CHROME_PATH` and a `PATH` lookup. Notebook outputs no longer contain the author's absolute paths (they came from warnings).
+- **New dependencies (logged as A2 requires):** `pytest-cov` and `coverage` for the coverage requirement; `pypandoc_binary` for the pandoc export (D-040).
+- **Impact / how to reverse:** `git revert` the Phase 8 commits; no model, metric or table value changed.
+
+---
+
+<a id="d-038"></a>
+
+### D-038: EDA Notebook Display Fix and Audit of Phase 1 and 2 Figures
+
+- **Date / Phase:** 2026-11-09 / Phase 8, tasks 8.1 and 8.3
+- **Context:** `viz.py` selects matplotlib's non-interactive `Agg` backend on import (right for scripts), so every `plt.show()` in `notebooks/02_eda.ipynb` printed a warning and **the EDA notebook displayed no charts**. Writing the final report also required checking every EDA figure against its table, which D-028 noted had not been done.
+- **Decision:** (a) notebook 02 switches to the inline backend after importing `viz` and was re-executed (all three notebooks now run cleanly through `python tasks.py notebooks`); (b) every figure in `reports/eda_findings.md` and the notebook 01 and 02 markdown was checked against its table and corrected where it differed. Text only: no code, table or model output changed.
+- **Corrections (all values now from the named tables):**
+  - Transmission medians ₹ 10,50,000 automatic vs ₹ 5,00,000 manual, raw ratio 2.10 (was ₹ 13.00 vs ₹ 4.75 lakh and "2.74x").
+  - Fuel: petrol median ₹ 4,60,000 (was ₹ 4.50 lakh), diesel mean ₹ 10.00 lakh (was ₹ 9.28 lakh), petrol mean ₹ 5.73 lakh (was ₹ 6.29 lakh), CNG ₹ 3,70,000 (was ₹ 3.60 lakh), LPG ₹ 1,82,500 (was ₹ 2.12 lakh), Kruskal-Wallis H 2527.5 (was 1756.2).
+  - Seller medians ₹ 5,90,000 dealer, ₹ 5,10,000 individual, effect size 0.18 (were ₹ 6.50 and ₹ 4.50 lakh, 0.26).
+  - Brands: Maruti 4,933 (32.36%) and Hyundai 2,952 (19.36%), together 51.73%, in 31 brands of which 13 have fewer than 30 rows (were 4,948, 2,982, 52.0%, 32 and 14); brand medians for Toyota, MG, Isuzu, Audi, Mercedes-Benz, BMW and Porsche corrected.
+  - Seats: 7-seater median ₹ 8,75,000 (was ₹ 8.80 lakh); 4-seaters are ₹ 27,50,000, the second dearest group (was "₹ 3.90 lakh"), so the finding now says seat count mostly reflects body type.
+  - Depreciation: 9.39% (Mahindra) to 12.89% (Hyundai) for Maruti, Hyundai, Honda, Mahindra and Toyota (was "8% to 12%" and listed Ford instead of Mahindra; Toyota is not the slowest to depreciate).
+  - Shares: manual 79.34% (was 79.5%), five-seaters 83.76% (was 84.4%), mileage median 19.67 kmpl (was "centred at 19.3").
+  - Notebook 01: raw seller counts 9,539 / 5,699 / 173 (were 5,917 / 5,607 / 2,331), raw Maruti count 4,992 (was 4,948), raw price median ₹ 5.56 lakh and 95th percentile ₹ 20.50 lakh (were ₹ 4.5 and ₹ 18 lakh), the memory footprint (the markdown said about 4.6 MB, the notebook printed 2.30 MB), and mileage outliers above 30 identified as CNG cars quoted in km/kg (were "ultra-efficient diesels").
+- **Why the conclusions did not change:** every corrected finding points the same way (automatics, diesels and dealers list higher; age and power drive price; brand concentration is high). The modelling decisions rest on measured CV results (D-013 to D-019), not on these descriptive figures.
+- **Evidence:** `reports/eda_findings.md` (correction note at the top), notebook diffs in git, `reports/tables/report_key_figures.csv`.
+- **Impact / how to reverse:** `git revert` the commit; not recommended.
+
+---
+
+<a id="d-039"></a>
+
+### D-039: Number Provenance Checks and Derived-Figure Table
+
+- **Date / Phase:** 2026-11-09 / Phase 8, task 8.3
+- **Context:** A4 forbids invented numbers, and the brief requires every number in the final report to be traceable to a file, with an appendix naming each number's source.
+- **Decision:**
+  1. `src/carprice/provenance.py` extracts every number from prose (ignoring code, file names, link targets, decision ids, dates, version tags and whole numbers up to 12) and matches it, at the precision written, against the numbers in `reports/tables/*.csv`, `reports/predictions/*.csv`, `models/*.json` and `configs/config.yaml`. Percent (x100), lakh and crore forms of a stored value are accepted.
+  2. Attribution prefers a file cited in backticks in the same paragraph or table caption ("cited"); a value found only by searching all files is marked. The report's Appendix D is generated by `python -m carprice.provenance reports/final_report.md`, and `tests/test_provenance.py` fails if the appendix is stale, if any number lacks a source, or if any number is matched only by search.
+  3. Shares, ratios, relative improvements, skewness and counts that no earlier phase stored are computed by `src/carprice/report_facts.py` into `reports/tables/report_key_figures.csv`, with the formula and source file for each, instead of being worked out by hand.
+  4. The same check runs on `eda_findings.md`, `evaluation_summary.md`, the README, the viva notes, the demo script, the traceability table, the reproducibility check and the markdown of all three notebooks.
+- **Deviation from the brief:** the brief says "a file in `reports/tables/`". Worked-example and what-if figures live in `reports/predictions/`, the folder the Phase 6 brief named, and model settings in `models/` and `configs/config.yaml`; these are accepted as sources rather than copying them into `reports/tables/`.
+- **Known limit:** a bag-of-numbers check can be fooled by a wrong figure that happens to equal some other stored value; the citation preference narrows this, but it is why D-038 also needed a manual audit.
+- **Impact / how to reverse:** delete the module and its tests; the documents are unaffected.
+
+---
+
+<a id="d-040"></a>
+
+### D-040: Report Export Toolchain
+
+- **Date / Phase:** 2026-11-09 / Phase 8, task 8.3
+- **Context:** The brief asks for `.docx` and `.pdf` exports with pandoc. Pandoc was not installed on the machine, and there is no LaTeX engine for pandoc's default PDF route.
+- **Options considered:** (a) install pandoc and a LaTeX distribution system-wide; (b) `pypandoc_binary`, which ships the pandoc executable inside the virtual environment, with the PDF printed from pandoc's HTML by headless Chrome or Edge, already required for the screenshots; (c) skip the PDF.
+- **Decision:** (b). `scripts/export_report.py` (`make report`) writes the Word file directly with pandoc (table of contents, numbered sections, embedded figures) and the PDF from a self-contained HTML page styled by `scripts/report_print.css` in the A7 palette and fonts. The equivalent plain pandoc commands are in the README.
+- **Reason:** reproducible from `requirements.txt` with no system installs beyond a browser; the PDF keeps the report's typography.
+- **Length:** the PDF has 36 A4 pages: title and contents (3), body (26), appendices (about 8, including the generated number-source table). The body is within the brief's 20 to 30 pages.
+- **Impact / how to reverse:** any pandoc 3 on `PATH` with a LaTeX engine can produce the PDF instead (`pandoc final_report.md -o final_report.pdf`).
+
+---
+
+<a id="d-041"></a>
+
+### D-041: Final Model and Why (Phase 8 Confirmation)
+
+- **Date / Phase:** 2026-11-09 / Phase 8
+- **Final model:** the tuned XGBoost pipeline in `models/final_pipeline.joblib`: `TransformedTargetRegressor` on `log1p(price)` around the four engineered features (D-013), median imputation, per-fold rare-brand grouping and one-hot encoding (D-015), a cross-fitted target encoder for `model` (D-014), and `XGBRegressor` with the parameters in `models/best_params.json`, plus the 80% residual-quantile interval (D-020).
+- **Why:** it had the lowest five-fold CV log RMSE under the selection rule fixed before tuning (0.1654, D-019). LightGBM and histogram gradient boosting scored 0.1660, inside one fold standard deviation, so the three are effectively tied and the rule decided. On the locked test set it scored log RMSE 0.1648 (matching CV), MAE ₹ 94,648 and 50.97% within 10%, beating Ridge by ₹ 21,250 of MAE with a bootstrap interval that excludes zero (`test_metrics.csv`, `bootstrap_ci.csv`).
+- **Phase 8 check:** retraining from a clean clone reproduced the same parameters, CV scores and model-card metrics (D-037). No model change was made in Phase 8, so the test results remain uncontaminated (D-025).
+
+---
+
+<a id="d-042"></a>
+
+### D-042: Final List of Known Limitations
+
+- **Date / Phase:** 2026-11-09 / Phase 8 (extends D-026)
+- **Data:**
+  1. No condition, accident or service history, owners, city, colour, trim or variant; coarse model labels (for example "Rover", "C") hide variants worth lakhs.
+  2. Listing prices from one platform and one period, not transaction prices; prices will drift.
+- **Model accuracy (`segment_errors.csv`, `top_error_patterns.csv`):**
+  3. Cars 9 years or older: 33.92% (9-11 years) and 32.74% (12+ years) within 10%, against 50.97% overall.
+  4. Luxury cars above ₹ 20 lakh under-priced by a median 5.76%; cheapest quintile over-priced by 7.26%.
+  5. Interval calibrated overall (79.96%) but 92.45% for 0-2 year-old cars and 52.38% for 12+ years.
+  6. Rare fuels and brands cannot be evaluated reliably; brands absent from training are refused by the predictor and cannot be chosen in the GUI.
+- **Accepted deviations:** `km_was_capped` is not a model input (D-024); seat imputation runs before the split for 2 rows (D-022); Ridge uses target encoding (D-028).
+- **Engineering:**
+  7. Optuna's per-study time-out could shorten tuning on a much slower machine (D-037).
+  8. The SHAP summary in the GUI is the static report PNG (D-035), and at desktop width the axis caption under "Why this price" is clipped ("Effect vs an averag…"); both are cosmetic and were left unchanged in Phase 8.
+  9. `make` is not native on Windows; `python tasks.py` is the portable route (D-037).
+
+---
+
+<a id="d-043"></a>
+
+### D-043: Scope Not Delivered, and Why
+
+- **Date / Phase:** 2026-11-09 / Phase 8
+- **Not delivered or delivered differently:**
+  1. *Report author line:* `reports/final_report.md` has the placeholder "[Student name and USN]"; only the student can fill it in.
+  2. *PDF route:* produced through pandoc HTML and Chrome rather than pandoc with LaTeX (D-040).
+  3. *Number sources:* include `reports/predictions/`, `models/` and the config as well as `reports/tables/` (D-039).
+  4. *pre-commit hooks* (optional in A2): not set up; `make lint` and `make test` are the documented gates.
+  5. *Notebooks in `make all`:* not included, because they only display saved outputs; `make notebooks` re-executes them.
+  6. *Clipped GUI caption and static SHAP image:* left as they are (D-042 item 8); fixing them would change Phase 7 code outside this phase's scope.
+  7. *Publishing:* the v1.0 tag and commits are local; nothing was pushed to the GitHub remote (that is the student's decision).
+- **Delivered as asked:** clean-clone reproduction with a log, `make all` and `make app`, lint clean, tests passing, coverage reported (above 80%), README, decision log tidy, CHANGELOG, final report in three formats with a source appendix, viva notes, demo script and traceability table.
+
+---
+
+<a id="d-044"></a>
+
+### D-044: Resolution of the Remaining Open Questions
+
+- **Date / Phase:** 2026-11-09 / Phase 8
+- **Question 1, predictor timing under a throttled CPU (D-031):** **resolved.** Re-measured on mains power with the Performance plan: in all five fresh processes the predictor loaded in 0.335 s to 0.419 s and a single prediction took a median of 20.508 ms to 24.887 ms, so every run passes both targets (2.0 s and 100 ms) and `test_timing_meets_targets` passes (`reports/tables/predictor_timing.csv`).
+- **Question 2, dark-mode screenshots:** **resolved.** All eight light and eight dark screenshots were regenerated (`reports/figures/gui_*.png`, `gui_*_dark.png`).
+
+---
+
 ## Open questions for the student
 
-1. **Predictor timing under a throttled CPU (D-031).** On battery in the Windows Silent power plan the measurement varies widely. The latest run's fastest process passed (load 0.474 s, single-prediction median 27.2 ms) but its slowest failed (2.107 s, 154.5 ms). Please re-run `python tasks.py predict` on mains power so `predictor_timing.csv` reflects normal conditions.
-2. **Dark-mode screenshots.** Dark-mode screenshots for the report (`gui_*_dark.png`) have not been regenerated. Run `scripts/capture_screenshots.py` with the app running if you want them in the report; the script now also captures dark versions.
+1. **Author line.** Replace "[Student name and USN]" at the top of `reports/final_report.md`, then run `make report` to refresh the `.docx` and `.pdf`.
+2. **Publishing.** Push the commits and the `v1.0` tag to GitHub (`git push origin main --tags`) when you are ready; nothing has been pushed.
+3. **Cosmetic GUI fixes (optional).** Shorten the "Why this price" axis caption so it is not clipped at desktop width, and consider an interactive SHAP chart instead of the static image (D-042 item 8).

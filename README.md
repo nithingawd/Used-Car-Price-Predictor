@@ -1,163 +1,206 @@
 # Used Car Price Prediction System
 
-An end-to-end, reproducible machine learning system designed to estimate used car selling prices in Indian Rupees (INR) alongside plausible prediction intervals. Built with rigorous data hygiene, complete exploratory analysis, leak-free scikit-learn pipelines, gradient boosting models, and an interactive Streamlit multi-page web application.
+Estimate the listing price of a used car in India, with an 80% price range and a plain-language explanation, from eleven details anyone can read off the car: brand, model, age, kilometres driven, seller type, fuel, transmission, mileage, engine size, power and seats.
+
+An academic machine learning project: documented data cleaning, a full exploratory analysis, ten algorithms compared without leakage, a tuned XGBoost pipeline evaluated once on a locked test set, and a four-page Streamlit application.
+
+![Price estimator](reports/figures/gui_estimator_desktop.png)
 
 ---
 
-## Problem Statement
+## Problem statement
 
-Valuing used cars accurately requires accounting for multifaceted vehicular attributes—including brand equity, model hierarchy, age, cumulative odometer mileage, powertrain specifications (fuel, engine displacement, rated power), transmission technology, seating capacity, and seller channel. This project applies statistical data cleansing, exploratory data analysis, and advanced regression algorithms (Linear Regression, Ridge, Random Forest, XGBoost, LightGBM) to build a trustworthy pricing engine with explainability and intuitive user interfaces.
+Used car prices in India depend on many interacting factors, and private buyers and sellers have few objective reference points. Given a car's specification, the system predicts its selling price in rupees (a regression problem), states a range the price is likely to fall in, explains which inputs moved the estimate, and warns when the car belongs to a group the model prices poorly.
 
----
+The project is assessed on four requirements: (1) data cleansing and pre-processing with justified decisions, (2) a complete EDA, (3) suitable algorithms built and tuned without leakage, and (4) proper evaluation, prediction results and a GUI. `reports/requirements_traceability.md` maps each one to the files that demonstrate it.
 
-## Tech Stack & Environment
+## Results
 
-- **Python Version:** 3.11 (`3.11.9`)
-- **Environment Management:** Python `venv` + pinned `requirements.txt`
-- **Data Manipulation:** `pandas`, `numpy`
-- **Visualization:** `matplotlib`, `seaborn` (static EDA), `plotly` (interactive app)
-- **Machine Learning:** `scikit-learn`, `xgboost`, `lightgbm`
-- **Hyperparameter Optimization:** `optuna`
-- **Model Explainability:** `shap` (TreeExplainer) and permutation importance
-- **Model Persistence:** `joblib` (end-to-end Pipeline serialization)
-- **Application GUI:** `Streamlit`
-- **Testing & Quality:** `pytest`, `ruff`
-- **Configuration:** YAML via `configs/config.yaml` loaded into typed dataclasses
+Scored once on 3,049 held-out cars that played no part in training or tuning [`reports/tables/test_metrics.csv`]:
 
----
+| Metric | Final model (tuned XGBoost) | Ridge baseline | Dummy (train median) |
+|---|---|---|---|
+| Mean absolute error (₹) | **94,648** | 1,15,850 | 3,85,255 |
+| Within 10% of the true price | **50.97%** | 42.93% | 14.43% |
+| Within 20% of the true price | **82.09%** | 75.11% | 29.94% |
+| Median absolute % error | 9.75% | 12.04% | 37.08% |
+| RMSE (₹) | 2,02,801 | 2,66,575 | 8,07,416 |
+| R² on log price | 0.9399 | 0.9216 | -0.0036 |
 
-## Repository Structure
+- The 80% price range contains the true price for **79.96%** of test cars: well calibrated overall [`interval_coverage.csv`].
+- Test log RMSE 0.1648 matches the cross-validation estimate of 0.1654, so the model is not overfitted [`train_vs_test.csv`].
+- The model is weakest for cars 9 or more years old, luxury cars above ₹ 20 lakh and the cheapest cars [`segment_errors.csv`]; the app warns in words when a car falls into one of these groups.
 
-```text
-.
-├── AGENTS.md                  # Master project rules and technical specifications
-├── decisions.md               # Auditable log of all technical and modeling decisions
-├── README.md                  # Project overview and setup documentation
-├── requirements.txt           # Pinned production and development dependencies
-├── pyproject.toml             # Ruff linter/formatter & pytest configurations
-├── tasks.py                   # Cross-platform CLI task runner (setup, test, lint, app)
-├── Makefile                   # Standard Makefile automating workflows
-├── configs/
-│   └── config.yaml            # Centralized project, model, and path configurations
-├── data/
-│   ├── raw/                   # Read-only original dataset (cardekho_dataset.csv)
-│   ├── interim/               # Cleaned data checkpoints
-│   └── processed/             # Train and test splits
-├── notebooks/                 # Narrative Jupyter notebooks for EDA and evaluation
-├── src/carprice/              # Core reusable Python package
-│   ├── __init__.py
-│   ├── config.py              # Strongly-typed frozen config dataclasses
-│   ├── data.py                # Load, validate, audit, clean (Phase 1)
-│   ├── viz.py                 # Shared plot style and EDA figures (Phase 2)
-│   ├── features.py            # Split, feature engineering, ColumnTransformer (Phase 3)
-│   ├── train.py               # CV benchmark, Optuna tuning, final pipeline (Phase 4)
-│   ├── evaluate.py            # Test metrics, segments, bootstrap, SHAP (Phase 5)
-│   └── eval_plots.py          # Evaluation and SHAP figures (Phase 5)
-├── app/                       # Streamlit web application
-├── models/                    # Saved pipeline artifacts (.joblib) and metadata JSON
-├── reports/                   # Figures, summary tables, and final report
-└── tests/                     # Unit and integration test suite
-```
+The full write-up is in `reports/final_report.md` (also `.docx` and `.pdf`).
 
----
+## Screenshots
 
-## Getting Started
+| Market explorer | Model performance |
+|---|---|
+| ![Market explorer](reports/figures/gui_market_explorer_desktop.png) | ![Model performance](reports/figures/gui_model_performance_desktop.png) |
 
-### 1. Prerequisites
-- Python 3.11 installed on your system.
+Dark mode follows the system setting (`reports/figures/gui_*_dark.png`); narrow-screen layouts are in `reports/figures/gui_*_narrow.png`.
 
-### 2. Setup Environment
-Clone the repository and run setup:
+## Install
+
+Requirements: **Python 3.11** and Git. Chrome or Edge is needed only for regenerating screenshots and the PDF report.
 
 ```bash
-# Using Python task runner (Windows / macOS / Linux)
-python tasks.py setup
+git clone <repository-url> used-car-price-predictor
+cd used-car-price-predictor
 
-# Or using Make (if installed)
+# with make (Linux, macOS, or Windows with GNU make from MSYS2/Git for Windows):
 make setup
+
+# without make (any platform), using a Python 3.11 interpreter:
+python tasks.py setup            # Windows: py -3.11 tasks.py setup
 ```
 
-Alternatively, manually create and activate a virtual environment:
+`setup` creates `.venv/` and installs the pinned `requirements.txt`. Later commands use `.venv` automatically.
+
+## Run
+
 ```bash
-python -m venv .venv
-
-# On Windows:
-.venv\Scripts\activate
-
-# On Linux/macOS:
-source .venv/bin/activate
-
-pip install -r requirements.txt
+make all      # clean data, EDA figures, split, train, evaluate, prediction reports
+make test     # pytest suite
+make app      # Streamlit app at http://localhost:8501
 ```
 
-### 3. Run Quality Checks and Tests
+Every `make` target has a `python tasks.py <target>` equivalent:
+
+| Target | What it does | Writes |
+|---|---|---|
+| `clean-data` | Audit the raw CSV, apply the cleaning rules | `data/interim/cars_clean.csv`, `reports/tables/audit_*.csv`, `cleaning_log.csv` |
+| `eda` | EDA figures and tables | `reports/figures/eda_*.png`, `reports/tables/eda_*.csv` |
+| `split` | Stratified 80/20 split, feature screening | `data/processed/`, `feature_checks.csv` |
+| `train` | CV benchmark, Optuna tuning, final fit, encoder comparison | `models/*.joblib`, `model_card.json`, `cv_results.csv`, `tuning_trials_*.csv` |
+| `evaluate` | Score the locked test set, segments, bootstrap, permutation importance, SHAP | `test_metrics.csv` and the other evaluation tables, `eval_*` and `shap_*` figures |
+| `predict` | Input schema, worked examples, what-if, timing | `reports/predictions/`, `models/input_schema.json`, `models/model_specs.csv` |
+| `facts` | Derived figures quoted in the report | `reports/tables/report_key_figures.csv` |
+| `notebooks` | Re-execute the three notebooks in place | `notebooks/*.ipynb` outputs |
+| `all` | All of the above, in order | |
+| `app` | Launch the GUI | |
+| `test` / `coverage` | pytest, optionally with coverage of `src/carprice` | |
+| `lint` | `ruff check` and `ruff format --check` on the whole repository | |
+| `report` | Export the final report to Word and PDF | `reports/final_report.docx`, `.pdf` |
+| `clean` | Delete caches and generated data (never the raw CSV) | |
+
+The make targets build missing prerequisites, so `make test` or `make app` on a fresh clone first produces the cleaned data, the split and the model. The trained `.joblib` files and the generated data are not committed. Run times on the development laptop are in `reports/reproducibility_check.md`.
+
+Predict a single car from the command line (invalid input prints plain-language problems and exits with code 2):
 
 ```bash
-# Run test suite
-python tasks.py test
-
-# Run lint and formatting checks
-python tasks.py lint
-```
-
-### 4. Reproduce the Pipeline (Phases 1 to 6)
-
-Run these in order from the project root. Every step reads its settings from
-`configs/config.yaml` and uses the global seed, so re-running gives the same numbers.
-
-```bash
-# Phase 1: audit tables + cleaned data (data/interim/cars_clean.csv)
-python tasks.py clean-data
-
-# Phase 2: EDA figures and tables (narrative lives in notebooks/02_eda.ipynb)
-python tasks.py eda
-
-# Phase 3: stratified train/test split + measured feature checks
-python tasks.py split
-
-# Phase 4: CV benchmark, Optuna tuning, final pipeline, encoder comparison
-#          (writes models/*.joblib, models/model_card.json, reports/tables/*.csv)
-python tasks.py train
-
-# Phase 5: score the locked test set once, segments, bootstrap, permutation + SHAP
-#          (narrative: notebooks/03_model_evaluation.ipynb, summary: reports/evaluation_summary.md)
-python tasks.py evaluate
-
-# Phase 6: input schema, model spec lookup, test predictions, worked examples, what-if
-#          (reports/predictions/, reports/figures/whatif_age_km.png)
-python tasks.py predict
-```
-
-Predict one car from the command line (invalid input prints plain-language problems):
-
-```bash
-python -m carprice.predict one --brand Hyundai --model I20 --vehicle-age 4 --km-driven 45000   --seller-type Dealer --fuel-type Petrol --transmission-type Manual --mileage 18.6   --engine 1197 --max-power 82 --seats 5
+python -m carprice.predict one --brand Hyundai --model I20 --vehicle-age 4 --km-driven 45000 \
+  --seller-type Dealer --fuel-type Petrol --transmission-type Manual --mileage 18.6 \
+  --engine 1197 --max-power 82 --seats 5
 python -m carprice.predict batch --csv cars.csv --out priced.csv
 ```
 
-The saved `.joblib` pipelines are not committed to git, so a fresh clone must run
-`python tasks.py train` before the tests or the app can load the model. Run-time
-columns (`fit_time_sec`, `pred_time_sec`) and trial timestamps vary between machines;
-every score and parameter does not.
+(Run from the project root with the `.venv` interpreter and `PYTHONPATH=src`.)
 
-### 5. Launch the Web Application
+## Reproduce each requirement
+
+| Requirement | Commands | Evidence to open |
+|---|---|---|
+| 1. Cleansing and pre-processing | `make clean-data split` | `notebooks/01_data_audit.ipynb`, `reports/tables/cleaning_log.csv`, `decisions.md` D-003 to D-008 |
+| 2. Exploratory data analysis | `make eda` | `notebooks/02_eda.ipynb`, `reports/eda_findings.md`, `reports/figures/eda_*.png` |
+| 3. Algorithms, building, tuning | `make train` | `reports/tables/cv_results.csv`, `tuning_trials_*.csv`, `models/model_card.json`, D-013 to D-020 |
+| 4a. Evaluation and prediction results | `make evaluate predict` | `notebooks/03_model_evaluation.ipynb`, `reports/evaluation_summary.md`, `reports/predictions/` |
+| 4b. GUI | `make app` | the running app, `reports/demo_script.md`, `reports/figures/gui_*.png` |
+
+All settings live in `configs/config.yaml`, and one global seed (42) is passed to every splitter, model and sampler, so re-running gives the same numbers; only timings differ between machines. The clean-clone check, with the commands, run times and a file-by-file comparison against the committed results, is in `reports/reproducibility_check.md` (`scripts/compare_runs.py` performs the comparison).
+
+To re-execute the three notebooks in place (after `make all`; they only read saved outputs and call `src/carprice`):
 
 ```bash
-streamlit run app/Home.py          # or: python tasks.py app
+make notebooks                   # or: python tasks.py notebooks
 ```
 
-Four pages, from the top navigation bar:
+## Export the report
 
-- **Price estimator:** pick a brand and model (specs pre-fill), adjust age, km and engine
-  figures, press *Estimate price*. You get the estimate in ₹ and lakh, the 80% range, a
-  similar-listings message, cautions for weak segments, the top five reasons (TreeSHAP), a
-  comparison with similar cars and a what-if chart. The *Batch estimate* tab prices a whole
-  CSV (download the template first).
-- **Market explorer:** filter all cleaned listings and read four charts.
-- **Model performance:** held-out test metrics, interactive accuracy charts, segment accuracy
-  and the main price drivers, all read from `reports/tables/`.
-- **About and data:** dataset, cleaning steps, how the model works, limitations, model card.
+```bash
+make report                      # or: python tasks.py report
+```
 
-The app needs the outputs of `python tasks.py train`, `evaluate` and `predict`. To refresh the
-screenshots in `reports/figures/gui_*.png`, start the app on port 8765 and run
-`python scripts/capture_screenshots.py` (needs Chrome or Edge).
+This runs `scripts/export_report.py`, which uses the pandoc binary bundled in `pypandoc_binary` (in `requirements.txt`). With a system pandoc and Chrome, the equivalent commands are:
+
+```bash
+cd reports
+pandoc final_report.md -o final_report.docx --toc --toc-depth=2 --number-sections --resource-path=.
+pandoc final_report.md -o final_report.html --standalone --embed-resources --mathml \
+  --toc --toc-depth=2 --number-sections --resource-path=. --css=../scripts/report_print.css
+chrome --headless=new --no-pdf-header-footer --print-to-pdf=final_report.pdf final_report.html
+```
+
+Every number in the report is checked against the saved tables by `tests/test_provenance.py`; Appendix D of the report lists each number's source file and is regenerated with `python -m carprice.provenance reports/final_report.md`.
+
+## Quality
+
+```bash
+make test        # pytest
+make coverage    # pytest with coverage of src/carprice
+make lint        # ruff check + ruff format --check on the whole repository
+```
+
+## Folder structure
+
+```text
+.
+├── AGENTS.md                 project brief and rules
+├── decisions.md              decision log D-001 onwards, with contents table and open questions
+├── CHANGELOG.md              release notes
+├── README.md                 this file
+├── UI_GUIDELINE.md           GUI work order (Phase 7)
+├── Makefile, tasks.py        task runners (identical targets)
+├── requirements.txt          pinned dependencies
+├── pyproject.toml            ruff and pytest settings
+├── configs/config.yaml       every path, seed, threshold, grid and search space
+├── data/
+│   ├── raw/                  read-only cardekho_dataset.csv
+│   ├── interim/              cars_clean.csv (generated)
+│   └── processed/            train.csv, test.csv (generated), split_indices.json
+├── src/carprice/
+│   ├── config.py             typed settings from the YAML
+│   ├── data.py               load, validate, audit, clean
+│   ├── viz.py, palette.py    shared plotting style, EDA figures, colour tokens
+│   ├── features.py           split, engineered features, ColumnTransformer
+│   ├── train.py              CV benchmark, Optuna tuning, final pipeline
+│   ├── evaluate.py           test metrics, segments, bootstrap, permutation, SHAP
+│   ├── eval_plots.py         evaluation and SHAP figures
+│   ├── predict.py            validated PricePredictor, CLI
+│   ├── insights.py           per-car explanation, what-if, spec lookup
+│   ├── prediction_reports.py Phase 6 output files and timing
+│   ├── formatting.py         ₹ and lakh formatting
+│   ├── market.py             market summaries for the GUI
+│   ├── report_facts.py       derived figures quoted in the report
+│   └── provenance.py         number-to-source checks for written documents
+├── app/
+│   ├── Home.py               entry point and price estimator
+│   ├── pages/                market explorer, model performance, about and data
+│   └── components/           theme.css, palette, UI pieces, charts, loaders, batch checks
+├── .streamlit/config.toml    light and dark themes
+├── models/                   final_pipeline.joblib (generated), model card, schema, specs
+├── notebooks/                01 data audit, 02 EDA, 03 model evaluation
+├── reports/
+│   ├── final_report.md/.docx/.pdf, viva_notes.md, demo_script.md
+│   ├── requirements_traceability.md, reproducibility_check.md
+│   ├── eda_findings.md, evaluation_summary.md
+│   ├── figures/              every figure (EDA, evaluation, SHAP, GUI screenshots)
+│   ├── tables/               every table as CSV
+│   └── predictions/          test predictions, worked examples, what-if grid
+├── scripts/                  capture_screenshots.py, export_report.py, compare_runs.py
+└── tests/                    pytest suite
+```
+
+## Known limitations
+
+- **No condition, accident history, ownership, city, trim or variant in the data.** These explain most of the remaining error.
+- **Old cars:** only 32.74% of cars 12+ years old are priced within 10%, and the 80% range covers 52.38% of them [`segment_errors.csv`].
+- **Luxury and cheapest cars:** above ₹ 20 lakh the model under-prices by a median 5.76%; the cheapest fifth is over-priced by 7.26%.
+- **Rare brands and fuels** (for example LPG) have too little data to price or evaluate reliably; brands absent from training are refused.
+- **Listing prices from one platform and one period**, not final sale prices; prices drift over time.
+- Full list: `decisions.md` D-026 and D-042, and Chapter 9 of the final report.
+
+## Data source and licence
+
+The dataset (`data/raw/cardekho_dataset.csv`) consists of used car listings from CarDekho, used here **for academic purposes only**. All rights to the data remain with their owners; it is not redistributed for any other purpose and contains no personal information about sellers. The code was written for an academic project and carries no warranty; price estimates are guidance, not valuations.
