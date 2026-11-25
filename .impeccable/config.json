@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-11-25T19:17:55.783Z",
+        "reason": "model decision: user chose the canon direction with the Vercel dashboard as a named craft bar; Geist is that product's own UI face"
+      }
+    ]
+  }
+}

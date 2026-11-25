@@ -194,25 +194,27 @@ The GUI and every chart must look deliberately designed, not like a default temp
 
 ## Palette (use these exact values everywhere)
 
-| Role | Hex | Used for |
-|---|---|---|
-| Background | #F7F5F0 | Page background (warm off-white) |
-| Surface | #FFFFFF | Cards, input panels, tables |
-| Ink (text) | #14213D | Headings and body text |
-| Muted text | #6B7280 | Captions, axis labels, helper text |
-| Primary (teal) | #0E7C7B | Buttons, selected states, main series in charts |
-| Accent (amber) | #F2A541 | One highlight per view: the predicted price marker, key callout |
-| Border | #E3DED3 | 1 px card and divider lines |
-| Positive | #2E7D32 | Good-fit indicators |
-| Negative | #C0392B | Errors and warnings only |
-| Chart categorical | #0E7C7B, #14213D, #F2A541, #7A9E9F, #B5651D, #8D99AE | Maximum 6 series; use grey for "other" |
-| Chart sequential | white #FFFFFF to teal #0E7C7B | Heatmaps and density; never a rainbow map |
+Replaced on 2026-11-26 at the student's request (D-045). The GUI uses the values below; the static report figures keep the original A7 palette they were published with (`src/carprice/palette.py`, top section).
+
+| Role | Light | Dark | Used for |
+|---|---|---|---|
+| Background | #FAFAFA | #0B0B0D | Page background |
+| Surface | #FFFFFF | #141417 | Cards, input panels, tables |
+| Ink (text) | #18181B | #EDEDEF | Headings and body text |
+| Muted text | #71717A | #A1A1AA | Captions, axis labels, helper text |
+| Primary (blue) | #2F5BEA | #7C9BFF (text/lines) | Buttons, selected states, main series in charts |
+| Highlight (amber) | #D97706 | #F59E0B | One highlight per view: the predicted price marker, key callout |
+| Border | #E4E4E7 | #27272A | 1 px card and divider lines |
+| Positive | #15803D | #4ADE80 | Good-fit indicators |
+| Negative | #DC2626 | #F87171 | Errors and warnings only |
+| Chart categorical | #2F5BEA, #18181B, #D97706, #0D9488, #BE185D, #8B8B94 | see palette.py | Maximum 6 series; use grey for "other" |
+| Chart sequential | white #FFFFFF to blue #2F5BEA | surface to #7C9BFF | Heatmaps and density; never a rainbow map |
 
 ## Typography, spacing and layout
 
-- Fonts: headings in "DM Serif Display" or "Fraunces"; body and UI in "Inter"; numbers and metrics in "JetBrains Mono". Load via Google Fonts CSS import in app/components/theme.css; fall back to system sans-serif.
+- Fonts: "Geist" for headings, body and UI; "Geist Mono" for tabular data. Big numbers use Geist with tabular figures. Load via Google Fonts CSS import in app/components/theme.css and .streamlit/config.toml; fall back to system sans-serif.
 
-- Spacing scale: multiples of 4 px (4, 8, 12, 16, 24, 32, 48). Card padding 24 px, corner radius 12 px, 1 px border in the Border colour, no heavy shadows.
+- Spacing scale: multiples of 4 px (4, 8, 12, 16, 24, 32, 48). Card padding 24 px, corner radius 8 px (controls 6 px), 1 px border in the Border colour, no heavy shadows.
 
 - Hierarchy: one H1 per page, short sentence-case labels, left-aligned text. Big numbers get a small muted caption underneath.
 

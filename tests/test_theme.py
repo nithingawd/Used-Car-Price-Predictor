@@ -35,15 +35,15 @@ def contrast(first: str, second: str) -> float:
     return (high + 0.05) / (low + 0.05)
 
 
-def test_light_theme_is_the_a7_palette() -> None:
-    """The light theme in config.toml uses the exact A7 colours."""
+def test_light_theme_matches_palette_module() -> None:
+    """The light theme in config.toml uses the GUI colours from palette.py (D-045)."""
     light = THEME["light"]
-    assert light["backgroundColor"] == palette.BG_COLOR
-    assert light["secondaryBackgroundColor"] == palette.SURFACE_COLOR
-    assert light["textColor"] == palette.INK_COLOR
-    assert light["primaryColor"] == palette.PRIMARY_TEAL
+    assert light["backgroundColor"] == palette.GUI_BG_COLOR
+    assert light["secondaryBackgroundColor"] == palette.GUI_SURFACE_COLOR
+    assert light["textColor"] == palette.GUI_INK_COLOR
+    assert light["primaryColor"] == palette.GUI_PRIMARY
     assert light["chartCategoricalColors"] == palette.LIGHT_CHART_SLOTS
-    assert light["chartCategoricalColors"][:6] == palette.CATEGORICAL_PALETTE
+    assert light["chartCategoricalColors"][:6] == palette.GUI_CATEGORICAL_PALETTE
 
 
 def test_dark_theme_matches_palette_module() -> None:
@@ -64,7 +64,7 @@ def test_slot_lists_cover_every_role() -> None:
 
 
 @pytest.mark.parametrize(
-    "text", [palette.DARK_INK_COLOR, palette.DARK_MUTED_TEXT, palette.DARK_TEAL]
+    "text", [palette.DARK_INK_COLOR, palette.DARK_MUTED_TEXT, palette.DARK_PRIMARY]
 )
 @pytest.mark.parametrize("background", [palette.DARK_BG_COLOR, palette.DARK_SURFACE_COLOR])
 def test_dark_text_contrast(text: str, background: str) -> None:
@@ -75,6 +75,21 @@ def test_dark_text_contrast(text: str, background: str) -> None:
 def test_dark_negative_readable_on_cards() -> None:
     """The dark error colour is readable as text on cards."""
     assert contrast(palette.DARK_NEGATIVE_COLOR, palette.DARK_SURFACE_COLOR) >= TEXT_CONTRAST_MIN
+
+
+@pytest.mark.parametrize(
+    "text", [palette.GUI_INK_COLOR, palette.GUI_MUTED_TEXT, palette.GUI_PRIMARY]
+)
+@pytest.mark.parametrize("background", [palette.GUI_BG_COLOR, palette.GUI_SURFACE_COLOR])
+def test_light_text_contrast(text: str, background: str) -> None:
+    """Light-mode text colours reach 4.5:1 on the page and on cards."""
+    assert contrast(text, background) >= TEXT_CONTRAST_MIN
+
+
+@pytest.mark.parametrize("series", palette.GUI_CATEGORICAL_PALETTE)
+def test_light_chart_series_visible_on_cards(series: str) -> None:
+    """Each light chart series reaches 3:1 against the card colour."""
+    assert contrast(series, palette.GUI_SURFACE_COLOR) >= GRAPHIC_CONTRAST_MIN
 
 
 @pytest.mark.parametrize("series", palette.DARK_CATEGORICAL_PALETTE)
@@ -92,13 +107,14 @@ def test_button_text_readable_in_both_themes() -> None:
 def test_css_dark_tokens_match_palette() -> None:
     """theme.css light-dark() tokens use the palette.py values."""
     pairs = {
-        "--cp-bg": (palette.BG_COLOR, palette.DARK_BG_COLOR),
-        "--cp-surface": (palette.SURFACE_COLOR, palette.DARK_SURFACE_COLOR),
-        "--cp-ink": (palette.INK_COLOR, palette.DARK_INK_COLOR),
-        "--cp-muted": (palette.MUTED_TEXT, palette.DARK_MUTED_TEXT),
-        "--cp-teal": (palette.PRIMARY_TEAL, palette.DARK_TEAL),
-        "--cp-border": (palette.BORDER_COLOR, palette.DARK_BORDER_COLOR),
-        "--cp-negative": (palette.NEGATIVE_COLOR, palette.DARK_NEGATIVE_COLOR),
+        "--cp-bg": (palette.GUI_BG_COLOR, palette.DARK_BG_COLOR),
+        "--cp-surface": (palette.GUI_SURFACE_COLOR, palette.DARK_SURFACE_COLOR),
+        "--cp-ink": (palette.GUI_INK_COLOR, palette.DARK_INK_COLOR),
+        "--cp-muted": (palette.GUI_MUTED_TEXT, palette.DARK_MUTED_TEXT),
+        "--cp-primary": (palette.GUI_PRIMARY, palette.DARK_PRIMARY),
+        "--cp-highlight": (palette.GUI_HIGHLIGHT, palette.DARK_HIGHLIGHT),
+        "--cp-border": (palette.GUI_BORDER_COLOR, palette.DARK_BORDER_COLOR),
+        "--cp-negative": (palette.GUI_NEGATIVE_COLOR, palette.DARK_NEGATIVE_COLOR),
     }
     for token, (light, dark) in pairs.items():
         assert f"{token}: light-dark({light}, {dark});" in CSS, token
@@ -106,7 +122,7 @@ def test_css_dark_tokens_match_palette() -> None:
 
 def test_chart_slots_are_streamlit_placeholders() -> None:
     """Chart slot names map to Streamlit's #0000NN colour placeholders."""
-    assert chart_slot("teal") == "#000001"
+    assert chart_slot("primary") == "#000001"
     assert chart_slot("surface") == "#000010"
 
 

@@ -1,4 +1,4 @@
-"""The A7 palette: the single source of colour values for static charts and the GUI.
+"""Colour values for the static report figures (A7) and the Streamlit GUI (D-045).
 
 Kept dependency-free so the Streamlit app can import it without loading matplotlib.
 """
@@ -28,36 +28,57 @@ SEQUENTIAL_STOPS: list[str] = ["#FFFFFF", "#0E7C7B"]
 GRID_COLOR: str = "#ECE8E0"
 
 # ---------------------------------------------------------------------------
-# Dark mode (GUI only; report figures stay light). Derived from A7, see D-036.
-# Text tokens reach at least 4.5:1 on both dark backgrounds (tests/test_viz.py).
+# GUI theme (D-045): zinc neutrals, one blue action colour, amber as the single highlight
+# per view. Report figures above keep the A7 palette they were published with.
+# Text tokens reach at least 4.5:1 on page and cards in both modes (tests/test_theme.py).
 # ---------------------------------------------------------------------------
-DARK_BG_COLOR: str = "#0F1626"  # deep ink-navy page
-DARK_SURFACE_COLOR: str = "#18233A"  # cards, one step lighter than the page
-DARK_INK_COLOR: str = "#EEEAE1"  # warm off-white text, echoes the light background
-DARK_MUTED_TEXT: str = "#A4ACBA"
-DARK_TEAL: str = "#3FB1AF"  # brightened teal for lines, links and markers
-DARK_BORDER_COLOR: str = "#2C3852"
-DARK_GRID_COLOR: str = "#243049"
-DARK_POSITIVE_COLOR: str = "#5DBB63"
-DARK_NEGATIVE_COLOR: str = "#E8695B"
+GUI_BG_COLOR: str = "#FAFAFA"
+GUI_SURFACE_COLOR: str = "#FFFFFF"
+GUI_INK_COLOR: str = "#18181B"
+GUI_MUTED_TEXT: str = "#71717A"
+GUI_PRIMARY: str = "#2F5BEA"
+GUI_HIGHLIGHT: str = "#D97706"
+GUI_BORDER_COLOR: str = "#E4E4E7"
+GUI_GRID_COLOR: str = "#F0F0F2"
+GUI_POSITIVE_COLOR: str = "#15803D"
+GUI_NEGATIVE_COLOR: str = "#DC2626"
+GUI_CATEGORICAL_PALETTE: list[str] = [
+    GUI_PRIMARY,
+    GUI_INK_COLOR,
+    GUI_HIGHLIGHT,
+    "#0D9488",  # teal, fourth series
+    "#BE185D",  # rose, fifth series
+    "#8B8B94",  # neutral for "other" and de-emphasised marks
+]
+
+DARK_BG_COLOR: str = "#0B0B0D"
+DARK_SURFACE_COLOR: str = "#141417"
+DARK_INK_COLOR: str = "#EDEDEF"
+DARK_MUTED_TEXT: str = "#A1A1AA"
+DARK_PRIMARY: str = "#7C9BFF"  # lines, links and selected text; buttons keep GUI_PRIMARY
+DARK_HIGHLIGHT: str = "#F59E0B"
+DARK_BORDER_COLOR: str = "#27272A"
+DARK_GRID_COLOR: str = "#1E1E22"
+DARK_POSITIVE_COLOR: str = "#4ADE80"
+DARK_NEGATIVE_COLOR: str = "#F87171"
 DARK_CATEGORICAL_PALETTE: list[str] = [
-    DARK_TEAL,
-    DARK_INK_COLOR,  # the "ink" series flips to light text
-    ACCENT_AMBER,  # amber already reads well on navy (7.6:1)
-    "#7A9E9F",
-    "#D08A45",  # ochre, lightened from #B5651D for contrast on navy
-    "#8D99AE",
+    DARK_PRIMARY,
+    DARK_INK_COLOR,
+    DARK_HIGHLIGHT,
+    "#2DD4BF",
+    "#F472B6",
+    "#71717A",
 ]
 
 # Ten Plotly colour slots, same roles in both themes: the six categorical series, then
 # muted text, border, gridlines and card surface. They are written into .streamlit/config.toml
 # as chartCategoricalColors; the GUI draws with placeholders that Streamlit swaps for these.
 CHART_SLOT_ROLES: list[str] = [
-    "teal",
+    "primary",
     "ink",
-    "amber",
-    "soft_teal",
-    "ochre",
+    "highlight",
+    "series4",
+    "series5",
     "slate",
     "muted",
     "border",
@@ -65,11 +86,11 @@ CHART_SLOT_ROLES: list[str] = [
     "surface",
 ]
 LIGHT_CHART_SLOTS: list[str] = [
-    *CATEGORICAL_PALETTE,
-    MUTED_TEXT,
-    BORDER_COLOR,
-    GRID_COLOR,
-    SURFACE_COLOR,
+    *GUI_CATEGORICAL_PALETTE,
+    GUI_MUTED_TEXT,
+    GUI_BORDER_COLOR,
+    GUI_GRID_COLOR,
+    GUI_SURFACE_COLOR,
 ]
 DARK_CHART_SLOTS: list[str] = [
     *DARK_CATEGORICAL_PALETTE,

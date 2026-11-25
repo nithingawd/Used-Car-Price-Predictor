@@ -3,6 +3,7 @@
 Run with:  streamlit run app/Home.py
 """
 
+from pathlib import Path
 import time
 from typing import Any
 
@@ -19,6 +20,7 @@ from components.charts import compare_chart, factor_chart, whatif_chart
 from components.data import get_predictor, model_specs, training_listings
 from components.palette import PLOTLY_CONFIG
 from components.ui import (
+    display_label,
     empty_state,
     format_inr,
     format_lakh,
@@ -33,6 +35,7 @@ from components.ui import (
 
 SPEC_FIELDS = ["engine", "max_power", "mileage", "seats", "fuel_type", "transmission_type"]
 INPUT_FIELDS = list(FIELD_LABELS)
+BRAND_MARK = Path(__file__).parent / "components" / "mark.svg"
 
 # ---------------------------------------------------------------------------
 # Form state
@@ -93,7 +96,13 @@ def current_inputs() -> dict[str, Any]:
 def vehicle_inputs(predictor: PricePredictor, specs: pd.DataFrame) -> None:
     """Brand, model (filtered by brand), age and seller."""
     section_header("Vehicle")
-    st.selectbox("Brand", sorted(specs["brand"].unique()), key="brand", on_change=on_brand_change)
+    st.selectbox(
+        "Brand",
+        sorted(specs["brand"].unique()),
+        key="brand",
+        on_change=on_brand_change,
+        format_func=display_label,
+    )
     st.selectbox(
         "Model",
         models_of(specs, st.session_state["brand"]),
@@ -127,7 +136,11 @@ def engine_inputs(predictor: PricePredictor) -> None:
     section_header("Engine and fuel")
     schema = predictor.schema
     st.radio(
-        "Fuel type", sorted(schema["categories"]["fuel_type"]), key="fuel_type", horizontal=True
+        "Fuel type",
+        sorted(schema["categories"]["fuel_type"]),
+        key="fuel_type",
+        horizontal=True,
+        format_func=display_label,
     )
     st.radio(
         "Transmission",
@@ -198,7 +211,8 @@ def similar_message(car: CarSpec, similar: dict[str, Any] | None) -> str:
     if similar is None:
         return "There are too few comparable listings in the data to quote a market range."
     window = get_config().prediction.similar_age_window
-    who = f"{car.brand} {car.model}s" if similar["scope"] == "model" else f"{car.brand} cars"
+    brand = display_label(car.brand)
+    who = f"{brand} {car.model}s" if similar["scope"] == "model" else f"{brand} cars"
     age = f"{car.vehicle_age}-year-old" if car.vehicle_age else "nearly new"
     return (
         f"Similar {age} {who} (within {window} year) listed for about "
@@ -217,11 +231,15 @@ def result_card(estimate: dict[str, Any], stale: bool) -> None:
             else ""
         )
         st.html(
-            f'<p class="cp-estimate-label">Estimated price for this {car.brand} {car.model}</p>'
-            f'<p class="cp-estimate">{format_inr(result.price_inr)}</p>'
-            f'<p class="cp-caption"><span class="cp-mono">{format_lakh(result.price_inr)}</span>'
-            f' · likely between <span class="cp-mono">{format_inr(result.lower_inr)}</span> and '
-            f'<span class="cp-mono">{format_inr(result.upper_inr)}</span> (80% range)</p>{status}'
+            '<p class="cp-estimate-label">Estimated price for this '
+            f"{display_label(car.brand)} {car.model}</p>"
+            f'<p class="cp-estimate{" cp-estimate-stale" if stale else ""}">'
+            f"{format_inr(result.price_inr)}</p>"
+            f'<p class="cp-estimate-meta"><strong class="cp-num">'
+            f"{format_lakh(result.price_inr)}</strong>"
+            f'<span>Likely between <strong class="cp-num">{format_inr(result.lower_inr)}</strong>'
+            f' and <strong class="cp-num">{format_inr(result.upper_inr)}</strong> (80% range)'
+            f"</span></p>{status}"
         )
         st.plotly_chart(
             range_bar(result.lower_inr, result.price_inr, result.upper_inr),
@@ -281,11 +299,11 @@ def compare_panel(estimate: dict[str, Any]) -> None:
         section_header("Compare")
         if peer is None:
             st.html(
-                f'<p class="cp-caption">No {car.brand} listings aged {car.vehicle_age} years to '
-                "compare.</p>"
+                f'<p class="cp-caption">No {display_label(car.brand)} listings aged '
+                f"{car.vehicle_age} years to compare.</p>"
             )
             return
-        label = f"Typical {car.brand}, {car.vehicle_age} yrs"
+        label = f"Typical {display_label(car.brand)}, {car.vehicle_age} yrs"
         st.plotly_chart(
             compare_chart(estimate["result"].price_inr, peer["median_price"], label),
             config=PLOTLY_CONFIG,
@@ -295,7 +313,8 @@ def compare_panel(estimate: dict[str, Any]) -> None:
         st.html(
             f'<p class="cp-caption">This estimate is {abs(gap):.0f}% '
             f"{'above' if gap >= 0 else 'below'} "
-            f"the median of {peer['n_listings']:,} {car.brand} listings of the same age.</p>"
+            f"the median of {peer['n_listings']:,} {display_label(car.brand)} listings "
+            "of the same age.</p>"
         )
 
 
@@ -337,14 +356,12 @@ def whatif_panel(estimate: dict[str, Any]) -> None:
 
 
 def panels(estimate: dict[str, Any] | None) -> None:
-    """Why and compare side by side under the result (what-if goes full width below)."""
+    """Why and compare stacked under the result, full column width so labels never squeeze
+    the bars (what-if goes full width below)."""
     if estimate is None or "result" not in estimate:
         return
-    left, right = st.columns(2, gap="medium")
-    with left:
-        why_panel(estimate)
-    with right:
-        compare_panel(estimate)
+    why_panel(estimate)
+    compare_panel(estimate)
 
 
 # ---------------------------------------------------------------------------
@@ -485,6 +502,7 @@ def main() -> None:
         initial_sidebar_state="collapsed",
     )
     load_theme()
+    st.logo(str(BRAND_MARK), size="medium")
     pages = [
         st.Page(estimator_page, title="Price estimator", icon=":material/sell:", default=True),
         st.Page("pages/1_market_explorer.py", title="Market explorer", icon=":material/insights:"),

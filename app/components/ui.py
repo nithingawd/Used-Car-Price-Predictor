@@ -12,17 +12,19 @@ import streamlit as st
 
 from carprice.formatting import format_inr_indian, format_lakh
 from components.palette import (
-    ACCENT_AMBER,
     BORDER_COLOR,
+    HIGHLIGHT,
     INK_COLOR,
     MUTED_TEXT,
     PLOTLY_CONFIG,
-    TEAL_TINT,
+    PRIMARY,
+    PRIMARY_TINT,
     style_figure,
 )
 
 __all__ = [
     "chart_card",
+    "display_label",
     "empty_state",
     "format_inr",
     "format_lakh",
@@ -43,6 +45,19 @@ NOTE_KINDS = {
     "error": "cp-note cp-note-error",
 }
 RANGE_BAR_HEIGHT = 96
+# Cleaning title-cases labels ('Bmw'); show acronyms the way people write them.
+DISPLAY_LABELS = {
+    "Cng": "CNG",
+    "Lpg": "LPG",
+    "Bmw": "BMW",
+    "Mg": "MG",
+    "Mercedes-Amg": "Mercedes-AMG",
+}
+
+
+def display_label(value: str) -> str:
+    """A data label as shown on screen ('Cng' -> 'CNG'); the stored value never changes."""
+    return DISPLAY_LABELS.get(value, value)
 
 
 def format_inr(value: float) -> str:
@@ -57,7 +72,7 @@ def _theme_css() -> str:
 
 
 def load_theme() -> None:
-    """Inject the A7 stylesheet (called once per run by the app entry point)."""
+    """Inject the GUI stylesheet (called once per run by the app entry point)."""
     st.html(f"<style>{_theme_css()}</style>")
 
 
@@ -83,7 +98,7 @@ def metric_card(label: str, value: str, caption: str) -> None:
 def info_note(
     message: str, kind: str = "info", title: str | None = None, items: Iterable[str] = ()
 ) -> None:
-    """A bordered note: 'info' (teal), 'caution' or 'error' (red edge, A7 negative colour)."""
+    """A bordered note: 'info' (neutral), 'caution' (amber) or 'error' (red)."""
     heading = f"<strong>{escape(title)}</strong> " if title else ""
     bullets = "".join(f"<li>{escape(item)}</li>" for item in items)
     listing = f"<ul>{bullets}</ul>" if bullets else ""
@@ -107,16 +122,18 @@ def panel(name: str) -> AbstractContextManager[Any]:
     return st.container(border=True, key=f"card-{name}")
 
 
-def chart_card(fig: go.Figure, title: str, takeaway: str) -> None:
-    """A surface card holding a finding-style title, the chart and its text takeaway (A7)."""
+def chart_card(fig: go.Figure | Callable[[], go.Figure], title: str, takeaway: str) -> None:
+    """A surface card holding a finding-style title, the chart and its text takeaway.
+    Pass a callable to build the figure inside the card, so any control it creates
+    (a toggle, say) sits in the card under the title."""
     with panel(re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")):
         section_header(title)
-        st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
+        st.plotly_chart(fig() if callable(fig) else fig, config=PLOTLY_CONFIG, width="stretch")
         st.html(f'<p class="cp-caption">{escape(takeaway)}</p>')
 
 
 def range_bar(lower: float, estimate: float, upper: float) -> go.Figure:
-    """The 80% range as a teal band with the estimate as the page's one amber marker."""
+    """The 80% range as a tinted band with the estimate as the page's one highlight marker."""
     pad = (upper - lower) * 0.35
     fig = go.Figure()
     fig.add_shape(
@@ -133,8 +150,8 @@ def range_bar(lower: float, estimate: float, upper: float) -> go.Figure:
         x1=upper,
         y0=-0.35,
         y1=0.35,
-        fillcolor=TEAL_TINT,
-        line={"width": 0},
+        fillcolor=PRIMARY_TINT,
+        line={"color": PRIMARY, "width": 1.5},
         layer="below",
     )
     fig.add_trace(
@@ -163,7 +180,7 @@ def range_bar(lower: float, estimate: float, upper: float) -> go.Figure:
             mode="markers",
             hovertemplate=f"Estimate {format_inr(estimate)}<extra></extra>",
             marker={
-                "color": ACCENT_AMBER,
+                "color": HIGHLIGHT,
                 "size": 18,
                 "symbol": "diamond",
                 "line": {"color": INK_COLOR, "width": 1.5},

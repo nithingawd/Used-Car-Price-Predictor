@@ -52,6 +52,7 @@ Entries are numbered D-001 to D-044 in the order they were made; each heading is
 | [D-042](#d-042) | 8 | Final list of known limitations |
 | [D-043](#d-043) | 8 | Scope not delivered, and why |
 | [D-044](#d-044) | 8 | Resolution of the remaining open questions |
+| [D-045](#d-045) | Post-8 | GUI redesign: new visual system replaces A7 in the app |
 
 ---
 
@@ -882,6 +883,29 @@ Entries are numbered D-001 to D-044 in the order they were made; each heading is
 - **Question 1, predictor timing under a throttled CPU (D-031):** **resolved.** Re-measured on mains power with the Performance plan: in all five fresh processes the predictor loaded in 0.335 s to 0.419 s and a single prediction took a median of 20.508 ms to 24.887 ms, so every run passes both targets (2.0 s and 100 ms) and `test_timing_meets_targets` passes (`reports/tables/predictor_timing.csv`).
 - **Question 2, dark-mode screenshots:** **resolved.** All eight light and eight dark screenshots were regenerated (`reports/figures/gui_*.png`, `gui_*_dark.png`).
 
+### D-045: GUI Redesign, New Visual System Replaces A7 in the App
+
+- **Date / Phase:** 2026-11-26 / after Phase 8 (student request)
+- **Context:** The student asked for a premium, consistent redesign of the Streamlit GUI and chose to replace the A7 palette and fonts entirely, rather than redesign within them. The main users are viva examiners on a projector or laptop (`PRODUCT.md`).
+- **Options considered:** Four complete directions were shown on a decision page: an Indian highway-signage world, a statistical-handbook world, a boarding-pass world, and the category standard (a clean product dashboard). The student chose (d), the category standard, at the craft level of Linear, Vercel and Stripe.
+- **Decision:**
+  - Palette (`src/carprice/palette.py`, GUI section): zinc neutrals (page `#FAFAFA`, surface `#FFFFFF`, border `#E4E4E7`, ink `#18181B`, muted `#71717A`), one blue action colour `#2F5BEA`, and amber `#D97706` as the single highlight per view. Positive `#15803D`, negative `#DC2626`. The dark counterpart is on `#0B0B0D` / `#141417` with brightened blue `#7C9BFF` for text and lines.
+  - Type: Geist for UI and headings, Geist Mono for tabular data. Scale 12 / 13 / 14 / 16 / 20 / 28 / 48 px.
+  - Shape: 8 px card radius, 6 px controls, 1 px borders, no shadows.
+- **Changes beyond colour:**
+  - The estimate is the dominant element: 48 px tabular figures, with the lakh value and 80% range on one line.
+  - "Why this price" and "Compare" are stacked at full column width, which fixes the clipped axis title (open question 3 in the original list).
+  - Notes use a full border and tint instead of a left bar.
+  - The stale-estimate state is an amber pill.
+  - The batch empty state is a dashed placeholder.
+  - Motion is reduced to one authored moment, the estimate reveal, plus hover and focus transitions.
+  - A brand mark sits in the header (`app/components/mark.svg`).
+  - Acronym labels display as CNG, LPG, BMW, MG and Mercedes-AMG through `display_label()`. Stored values do not change.
+  - Tab and input selectors were updated for Streamlit's react-aria widgets; the old baseweb selectors no longer matched anything.
+- **Not changed:** The static report figures (matplotlib, the SHAP PNG) keep the A7 palette they were published with. The A7 constants remain in `palette.py` for `viz.py`. The SHAP image on the Model performance page therefore still shows A7 teal (see open questions).
+- **Evidence:** `.impeccable/surfaces/app-home-py.md` (direction contract), `tests/test_theme.py` (contrast at least 4.5:1 for text and 3:1 for chart series, in both modes).
+- **Impact / how to reverse:** Revert the GUI section of `palette.py`, `.streamlit/config.toml` and `app/components/theme.css`.
+
 ---
 
 ## Open questions for the student
@@ -889,3 +913,4 @@ Entries are numbered D-001 to D-044 in the order they were made; each heading is
 1. **Author line.** Resolved: Nithin Gowda R S (1RV24CS174) and Nikhilesh (1RV24CS176) are now the report's authors.
 2. **Publishing.** Push the commits and the `v1.0` tag to GitHub (`git push origin main --tags`) when you are ready; nothing has been pushed.
 3. **Cosmetic GUI fixes (optional).** Shorten the "Why this price" axis caption so it is not clipped at desktop width, and consider an interactive SHAP chart instead of the static image (D-042 item 8).
+4. **Report figures and the redesigned GUI (D-045).** The static report figures, including the SHAP image shown on the Model performance page, still use the A7 palette. Regenerating them in the new palette would change published report figures and needs a re-export of the `.docx` / `.pdf`. Keep them as they are, or regenerate?

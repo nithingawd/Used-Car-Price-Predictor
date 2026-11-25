@@ -1,4 +1,4 @@
-"""Plotly chart builders for every page (A7 palette, finding titles live in chart_card)."""
+"""Plotly chart builders for every page (D-045 palette, finding titles live in chart_card)."""
 
 import numpy as np
 import pandas as pd
@@ -6,27 +6,28 @@ import plotly.graph_objects as go
 
 from carprice.formatting import format_lakh
 from components.palette import (
-    ACCENT_AMBER,
     CATEGORICAL_PALETTE,
+    HIGHLIGHT,
     INK_COLOR,
-    PRIMARY_TEAL,
+    PRIMARY,
+    PRIMARY_TINT,
     SLATE,
     SURFACE_COLOR,
-    TEAL_TINT,
     style_figure,
 )
+from components.ui import display_label
 
 LAKH = 100000.0
 FUEL_COLOURS = {
-    "Petrol": PRIMARY_TEAL,
+    "Petrol": PRIMARY,
     "Diesel": INK_COLOR,
     "Cng": CATEGORICAL_PALETTE[3],
     "Lpg": CATEGORICAL_PALETTE[4],
 }
 ERROR_DISPLAY_LIMIT = 60
 HIST_BINS = 40
-# Brand bars carry '₹ x lakh · n listings' outside the bar; leave room for it.
-BRAND_LABEL_ROOM = 1.75
+# Brand bars carry '₹ x lakh' outside the bar; leave room for it at phone width.
+BRAND_LABEL_ROOM = 1.9
 LAKH_TICKS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500]
 
 
@@ -36,9 +37,9 @@ def lakh_ticks(low: float, high: float) -> list[float]:
 
 
 def factor_chart(factors: pd.DataFrame) -> go.Figure:
-    """Top drivers for one car: teal raises the price, slate lowers it; values sit in the labels."""
+    """Top drivers for one car: blue raises the price, grey lowers it; values sit in the labels."""
     ordered = factors.iloc[::-1]
-    colours = [PRIMARY_TEAL if v >= 0 else SLATE for v in ordered["effect_pct"]]
+    colours = [PRIMARY if v >= 0 else SLATE for v in ordered["effect_pct"]]
     labels = [
         f"{name} · {v:+.0f}%"
         for name, v in zip(ordered["label"], ordered["effect_pct"], strict=True)
@@ -74,7 +75,7 @@ def whatif_chart(curve: pd.DataFrame, field: str, current: float, x_label: str) 
                 x=list(x) + list(x[::-1]),
                 y=list(curve["upper_inr"] / LAKH) + list(curve["lower_inr"][::-1] / LAKH),
                 fill="toself",
-                fillcolor=TEAL_TINT,
+                fillcolor=PRIMARY_TINT,
                 line={"width": 0},
                 hoverinfo="skip",
                 name="80% range",
@@ -83,7 +84,7 @@ def whatif_chart(curve: pd.DataFrame, field: str, current: float, x_label: str) 
                 x=x,
                 y=curve["predicted_inr"] / LAKH,
                 mode="lines",
-                line={"color": PRIMARY_TEAL, "width": 2.5, "shape": "hv"},
+                line={"color": PRIMARY, "width": 2.5, "shape": "hv"},
                 name="Estimate",
                 hovertemplate="%{x:,}: ₹ %{y:.2f} lakh<extra></extra>",
             ),
@@ -114,7 +115,7 @@ def compare_chart(estimate: float, peer_price: float, peer_label: str) -> go.Fig
             x=[peer_price / LAKH, estimate / LAKH],
             y=labels,
             orientation="h",
-            marker_color=[SLATE, PRIMARY_TEAL],
+            marker_color=[SLATE, PRIMARY],
             hovertemplate="%{y}<extra></extra>",
         )
     )
@@ -141,7 +142,7 @@ def price_histogram(listings: pd.DataFrame, log_x: bool) -> go.Figure:
             x=centres,
             y=counts,
             width=np.diff(edges) * 0.92,
-            marker_color=PRIMARY_TEAL,
+            marker_color=PRIMARY,
             customdata=shown,
             hovertemplate="About ₹ %{customdata:.1f} lakh: %{y:,} listings<extra></extra>",
         )
@@ -182,10 +183,10 @@ def age_trend_chart(by_age: pd.DataFrame, trend: pd.Series) -> go.Figure:
                 x=by_age["vehicle_age"],
                 y=by_age["median_price"] / LAKH,
                 mode="lines+markers",
-                line={"color": PRIMARY_TEAL, "width": 2},
+                line={"color": PRIMARY, "width": 2},
                 marker={
                     "size": sizes,
-                    "color": PRIMARY_TEAL,
+                    "color": PRIMARY,
                     "line": {"color": SURFACE_COLOR, "width": 1},
                 },
                 name="Median price",
@@ -226,7 +227,7 @@ def power_scatter(sample: pd.DataFrame) -> go.Figure:
                 x=group["max_power"],
                 y=group["selling_price"] / LAKH,
                 mode="markers",
-                name=fuel,
+                name=display_label(fuel),
                 marker={"color": FUEL_COLOURS.get(fuel, SLATE), "size": 6, "opacity": 0.55},
                 customdata=np.stack(
                     [group["brand"], group["model"], group["vehicle_age"]], axis=-1
@@ -250,24 +251,22 @@ def power_scatter(sample: pd.DataFrame) -> go.Figure:
 
 
 def brand_chart(ranking: pd.DataFrame) -> go.Figure:
-    """Median price by brand with listing counts; the top brand is the view's amber highlight."""
+    """Median price by brand, listing counts in the labels; the top brand is highlighted."""
     ordered = ranking.iloc[::-1]
-    colours = [
-        ACCENT_AMBER if b == ranking.iloc[0]["brand"] else PRIMARY_TEAL for b in ordered["brand"]
-    ]
+    colours = [HIGHLIGHT if b == ranking.iloc[0]["brand"] else PRIMARY for b in ordered["brand"]]
     fig = go.Figure(
         go.Bar(
             x=ordered["median_price"] / LAKH,
-            y=ordered["brand"],
+            y=[
+                f"{display_label(b)} ({n:,})"
+                for b, n in zip(ordered["brand"], ordered["n_listings"], strict=True)
+            ],
             orientation="h",
             marker_color=colours,
-            text=[
-                f"{format_lakh(p)} · {n:,} listings"
-                for p, n in zip(ordered["median_price"], ordered["n_listings"], strict=True)
-            ],
+            text=[format_lakh(p) for p in ordered["median_price"]],
             textposition="outside",
             cliponaxis=False,
-            hovertemplate="%{y}: median ₹ %{x:.2f} lakh<extra></extra>",
+            hovertemplate="%{y} listings: median ₹ %{x:.2f} lakh<extra></extra>",
         )
     )
     style_figure(fig, 34 * len(ranking) + 60)
@@ -295,7 +294,7 @@ def predicted_vs_actual(predictions: pd.DataFrame) -> go.Figure:
                 y=actual,
                 mode="markers",
                 name="Test car",
-                marker={"color": PRIMARY_TEAL, "size": 6, "opacity": 0.45},
+                marker={"color": PRIMARY, "size": 6, "opacity": 0.45},
                 customdata=np.stack(
                     [
                         predictions["brand"],
@@ -338,12 +337,12 @@ def error_histogram(predictions: pd.DataFrame) -> go.Figure:
         go.Histogram(
             x=errors,
             xbins={"start": -ERROR_DISPLAY_LIMIT, "end": ERROR_DISPLAY_LIMIT, "size": 2},
-            marker_color=PRIMARY_TEAL,
+            marker_color=PRIMARY,
             marker_line={"color": SURFACE_COLOR, "width": 1},
             hovertemplate="%{x}%: %{y:,} cars<extra></extra>",
         )
     )
-    fig.add_vrect(x0=-10, x1=10, fillcolor=TEAL_TINT, line_width=0, layer="below")
+    fig.add_vrect(x0=-10, x1=10, fillcolor=PRIMARY_TINT, line_width=0, layer="below")
     style_figure(fig, 320)
     fig.update_xaxes(title="Error: (predicted - actual) / actual (%)", ticksuffix="%")
     fig.update_yaxes(title="Test cars")
@@ -351,12 +350,12 @@ def error_histogram(predictions: pd.DataFrame) -> go.Figure:
 
 
 def segment_chart(segments: pd.DataFrame, min_rows: int) -> go.Figure:
-    """Within-10% share per segment; the weakest eligible segment is the amber highlight."""
+    """Within-10% share per segment; the weakest eligible segment is the highlight."""
     ordered = segments.iloc[::-1]
     eligible = segments[segments["n_test"] >= min_rows]
     weakest = eligible["within_10pct"].idxmin() if not eligible.empty else None
     colours = [
-        ACCENT_AMBER if i == weakest else (PRIMARY_TEAL if n >= min_rows else SLATE)
+        HIGHLIGHT if i == weakest else (PRIMARY if n >= min_rows else SLATE)
         for i, n in zip(ordered.index, ordered["n_test"], strict=True)
     ]
     labels = [f"{s}  (n={n:,})" for s, n in zip(ordered["segment"], ordered["n_test"], strict=True)]
@@ -373,6 +372,6 @@ def segment_chart(segments: pd.DataFrame, min_rows: int) -> go.Figure:
         )
     )
     style_figure(fig, 30 * len(segments) + 60)
-    fig.update_xaxes(title="Cars priced within 10% (%)", range=[0, 100], ticksuffix="%")
+    fig.update_xaxes(title="Priced within 10%", range=[0, 100], ticksuffix="%")
     fig.update_yaxes(automargin=True)
     return fig

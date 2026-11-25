@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T00:00:00Z",
+  "title": "Design System: Used Car Price Predictor",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Action Blue", "canonical": "#2F5BEA", "darkCounterpart": "primary-dark", "tonalRamp": ["#0F1D4D", "#17307E", "#2449C9", "#2F5BEA", "#5D7FEF", "#8BA4F3", "#BAC8F8", "#E8EDFD"] },
+      "highlight": { "role": "secondary", "displayName": "Signal Amber", "canonical": "#D97706", "darkCounterpart": "highlight-dark", "tonalRamp": ["#451A03", "#78350F", "#B45309", "#D97706", "#F59E0B", "#FBBF24", "#FDE68A", "#FFFBEB"] },
+      "series-teal": { "role": "tertiary", "displayName": "Series Teal", "canonical": "#0D9488", "darkCounterpart": "series-teal-dark" },
+      "series-rose": { "role": "tertiary", "displayName": "Series Rose", "canonical": "#BE185D", "darkCounterpart": "series-rose-dark" },
+      "page": { "role": "neutral", "displayName": "Paper", "canonical": "#FAFAFA", "darkCounterpart": "page-dark" },
+      "surface": { "role": "neutral", "displayName": "Card White", "canonical": "#FFFFFF", "darkCounterpart": "surface-dark" },
+      "subtle": { "role": "neutral", "displayName": "Zinc Wash", "canonical": "#F4F4F5", "darkCounterpart": "subtle-dark" },
+      "ink": { "role": "neutral", "displayName": "Zinc Ink", "canonical": "#18181B", "darkCounterpart": "ink-dark", "tonalRamp": ["#09090B", "#18181B", "#27272A", "#3F3F46", "#71717A", "#A1A1AA", "#E4E4E7", "#FAFAFA"] },
+      "muted": { "role": "neutral", "displayName": "Zinc Slate", "canonical": "#71717A", "darkCounterpart": "muted-dark" },
+      "border": { "role": "neutral", "displayName": "Hairline", "canonical": "#E4E4E7", "darkCounterpart": "border-dark" },
+      "border-strong": { "role": "neutral", "displayName": "Firm Hairline", "canonical": "#D4D4D8", "darkCounterpart": "border-strong-dark" },
+      "control-border": { "role": "neutral", "displayName": "Control Outline", "canonical": "#8B8B94" },
+      "grid": { "role": "neutral", "displayName": "Grid", "canonical": "#F0F0F2", "darkCounterpart": "grid-dark" },
+      "positive": { "role": "status", "displayName": "Positive", "canonical": "#15803D", "darkCounterpart": "positive-dark" },
+      "negative": { "role": "status", "displayName": "Negative", "canonical": "#DC2626", "darkCounterpart": "negative-dark" },
+      "caution-ink": { "role": "status", "displayName": "Caution Ink", "canonical": "#B45309", "darkCounterpart": "caution-ink-dark" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The estimate only; 40px below 960px." },
+      "headline": { "displayName": "Headline", "purpose": "The one H1 per page and metric-card values; H1 24px below 480px." },
+      "lede": { "displayName": "Lede", "purpose": "One muted sentence under the H1, max 68ch." },
+      "title": { "displayName": "Title", "purpose": "Section and card titles; chart titles state the finding." },
+      "body": { "displayName": "Body", "purpose": "Notes, tables, chart text." },
+      "label": { "displayName": "Label", "purpose": "Widget labels, metric labels, status pill." },
+      "caption": { "displayName": "Caption", "purpose": "Chart takeaways, provenance, metric captions." },
+      "mono": { "displayName": "Mono", "purpose": "Code and identifiers only." }
+    },
+    "shadows": [
+      { "name": "focus-halo", "value": "0 0 0 3px rgba(47, 91, 234, 0.22)", "purpose": "Keyboard focus on buttons and focused fields; dark mode uses rgba(124, 155, 255, 0.32)." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "All state transitions (150ms) and the estimate reveal." },
+      { "name": "estimate-reveal", "value": "520ms: opacity 0 to 1, translateY(4px) to 0, blur(4px) to 0", "purpose": "The app's one authored motion, on the estimate figure; disabled under prefers-reduced-motion." },
+      { "name": "chart-transition", "value": "300ms cubic-in-out", "purpose": "Plotly layout transitions." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "960px" },
+      { "name": "mark-only", "value": "640px" },
+      { "name": "compact", "value": "480px" }
+    ],
+    "chartSlots": {
+      "roles": ["primary", "ink", "highlight", "series4", "series5", "slate", "muted", "border", "grid", "surface"],
+      "placeholders": "#000001 to #000010, swapped by Streamlit for the active theme's chartCategoricalColors",
+      "light": ["#2F5BEA", "#18181B", "#D97706", "#0D9488", "#BE185D", "#8B8B94", "#71717A", "#E4E4E7", "#F0F0F2", "#FFFFFF"],
+      "dark": ["#7C9BFF", "#EDEDEF", "#F59E0B", "#2DD4BF", "#F472B6", "#71717A", "#A1A1AA", "#27272A", "#1E1E22", "#141417"],
+      "sequentialLight": ["#FFFFFF", "#2F5BEA"],
+      "sequentialDark": ["#141417", "#7C9BFF"]
+    },
+    "outOfSystem": "Static matplotlib and SHAP report figures keep the A7 palette (constants at the top of src/carprice/palette.py) by design; they are not part of this GUI system."
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action, e.g. Estimate price; full width under the input panel.",
+      "html": "<button class=\"ds-btn-primary\">Estimate price</button>",
+      "css": ".ds-btn-primary { font-family: Geist, system-ui, sans-serif; font-size: 14px; font-weight: 500; min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--cp-primary, #2F5BEA); background: #2F5BEA; color: #FFFFFF; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #2449C9; border-color: #2449C9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.22); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Lesser actions such as downloads.",
+      "html": "<button class=\"ds-btn-secondary\">Download CSV</button>",
+      "css": ".ds-btn-secondary { font-family: Geist, system-ui, sans-serif; font-size: 14px; font-weight: 500; min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--cp-border, #E4E4E7); background: var(--cp-surface, #FFFFFF); color: var(--cp-ink, #18181B); cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-secondary:hover { background: var(--cp-subtle, #F4F4F5); border-color: var(--cp-border-strong, #D4D4D8); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.22); }"
+    },
+    {
+      "name": "Number Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled numeric input with tabular figures.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Kilometres driven</span><input class=\"ds-input\" value=\"59000\" inputmode=\"numeric\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 8px; font-family: Geist, system-ui, sans-serif; } .ds-field-label { font-size: 13px; font-weight: 500; color: var(--cp-ink, #18181B); } .ds-input { font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--cp-border, #E4E4E7); background: var(--cp-surface, #FFFFFF); color: var(--cp-ink, #18181B); transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-input:hover { border-color: var(--cp-border-strong, #D4D4D8); } .ds-input:focus-visible { outline: none; border-color: var(--cp-primary, #2F5BEA); box-shadow: 0 0 0 3px rgba(47, 91, 234, 0.22); }"
+    },
+    {
+      "name": "Top Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "White header with brand mark, wordmark and page tabs; selection in ink, not blue.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 28 28\" aria-hidden=\"true\"><rect width=\"28\" height=\"28\" rx=\"7\" fill=\"#2F5BEA\"/><path d=\"M6 15.5h16\" stroke=\"#FFFFFF\" stroke-opacity=\"0.55\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M9 11.5v8M19 11.5v8\" stroke=\"#FFFFFF\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M14 11.5l3.5 4-3.5 4-3.5-4z\" fill=\"#F59E0B\" stroke=\"#FFFFFF\" stroke-width=\"1.25\" stroke-linejoin=\"round\"/></svg>Used Car Price Predictor</span><a class=\"ds-nav-link\" aria-current=\"page\" href=\"#\">Price estimator</a><a class=\"ds-nav-link\" href=\"#\">Market explorer</a><a class=\"ds-nav-link\" href=\"#\">Model performance</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 4px; padding: 8px 16px; background: var(--cp-surface, #FFFFFF); border-bottom: 1px solid var(--cp-border, #E4E4E7); font-family: Geist, system-ui, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 12px; margin-right: 16px; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--cp-ink, #18181B); white-space: nowrap; } .ds-nav-link { padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; color: var(--cp-muted, #71717A); text-decoration: none; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-nav-link:hover, .ds-nav-link[aria-current=\"page\"] { background: var(--cp-subtle, #F4F4F5); color: var(--cp-ink, #18181B); } .ds-nav-link:focus-visible { outline: 2px solid var(--cp-primary, #2F5BEA); outline-offset: 2px; }"
+    },
+    {
+      "name": "Metric Card",
+      "kind": "card",
+      "refersTo": "metric-card",
+      "description": "Label, big tabular number, muted plain-English caption.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-metric-label\">Within 10% of actual</p><p class=\"ds-metric-value\">00.0%</p><p class=\"ds-caption\">Share of held-out test cars priced within 10%.</p></div>",
+      "css": ".ds-card { font-family: Geist, system-ui, sans-serif; background: var(--cp-surface, #FFFFFF); border: 1px solid var(--cp-border, #E4E4E7); border-radius: 8px; padding: 24px; } .ds-metric-label { margin: 0; font-size: 13px; font-weight: 500; color: var(--cp-muted, #71717A); } .ds-metric-value { margin: 8px 0; font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; color: var(--cp-ink, #18181B); } .ds-caption { margin: 0; font-size: 13px; line-height: 1.55; color: var(--cp-muted, #71717A); }"
+    },
+    {
+      "name": "Caution Note",
+      "kind": "custom",
+      "refersTo": "note-caution",
+      "description": "Full border and tint, bold lead phrase; neutral and error variants share the shape.",
+      "html": "<div class=\"ds-note ds-note-caution\" role=\"note\"><strong>Few similar cars.</strong> The model has seen fewer than 20 listings like this one, so treat the range with care.</div>",
+      "css": ".ds-note { font-family: Geist, system-ui, sans-serif; font-size: 14px; line-height: 1.55; color: var(--cp-ink, #18181B); background: var(--cp-subtle, #F4F4F5); border: 1px solid var(--cp-border, #E4E4E7); border-radius: 6px; padding: 12px 16px; } .ds-note strong { font-weight: 600; } .ds-note-caution { background: var(--cp-caution-bg, #FFFBEB); border-color: var(--cp-caution-border, #FDE68A); } .ds-note-caution strong { color: var(--cp-caution-ink, #B45309); }"
+    },
+    {
+      "name": "Stale Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Flags a result that no longer matches the inputs.",
+      "html": "<span class=\"ds-pill\">Inputs changed: re-estimate</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 8px; font-family: Geist, system-ui, sans-serif; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--cp-caution-border, #FDE68A); background: var(--cp-caution-bg, #FFFBEB); color: var(--cp-caution-ink, #B45309); } .ds-pill::before { content: \"\"; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }"
+    },
+    {
+      "name": "Estimate with Range Bar",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signature: the estimate in display type over the 80% band with one amber diamond.",
+      "html": "<div class=\"ds-card ds-estimate-card\"><p class=\"ds-est-label\">Estimated price for this Maruti Swift Dzire</p><p class=\"ds-est\">&#8377; 5,31,235</p><p class=\"ds-est-meta\"><strong>&#8377; 5.31 lakh</strong> Likely between <strong>&#8377; 4,39,178</strong> and <strong>&#8377; 6,43,361</strong> (80% range)</p><svg class=\"ds-range\" viewBox=\"0 0 400 56\" role=\"img\" aria-label=\"80% range with estimate marker\"><line x1=\"0\" y1=\"20\" x2=\"400\" y2=\"20\" stroke=\"#E4E4E7\" stroke-width=\"2\"/><rect x=\"80\" y=\"10\" width=\"240\" height=\"20\" fill=\"rgba(47,91,234,0.12)\" stroke=\"#2F5BEA\" stroke-width=\"1.5\"/><path d=\"M80 12v16M320 12v16\" stroke=\"#18181B\" stroke-width=\"2\"/><path d=\"M180 11l9 9-9 9-9-9z\" fill=\"#D97706\" stroke=\"#18181B\" stroke-width=\"1.5\"/><text x=\"80\" y=\"50\" text-anchor=\"middle\" fill=\"#71717A\" font-size=\"12\">Low 4.39 lakh</text><text x=\"320\" y=\"50\" text-anchor=\"middle\" fill=\"#71717A\" font-size=\"12\">High 6.43 lakh</text></svg></div>",
+      "css": ".ds-estimate-card { font-family: Geist, system-ui, sans-serif; background: var(--cp-surface, #FFFFFF); border: 1px solid var(--cp-border, #E4E4E7); border-radius: 8px; padding: 24px; } .ds-est-label { margin: 0; font-size: 14px; font-weight: 500; color: var(--cp-muted, #71717A); } .ds-est { margin: 8px 0; font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; color: var(--cp-ink, #18181B); animation: ds-reveal 520ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-est-meta { margin: 0; font-size: 14px; color: var(--cp-muted, #71717A); } .ds-est-meta strong { color: var(--cp-ink, #18181B); font-weight: 500; } .ds-range { display: block; width: 100%; margin-top: 16px; } @keyframes ds-reveal { from { opacity: 0; transform: translateY(4px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } } @media (prefers-reduced-motion: reduce) { .ds-est { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Instrument Panel",
+    "overview": "The category standard, a clean product dashboard, played straight at the craft level of Linear, the Vercel dashboard and the Stripe dashboard. Zinc neutrals carry almost every pixel; one blue does the acting (buttons, selection, the main chart series) and one amber marks the single thing worth looking at on a view. Hierarchy comes from size, weight and space, not from colour or decoration. The estimate is the largest object on the estimator, and every chart sits in a bordered card with a finding-style title above it and a plain-English takeaway below it.\n\nDensity is calm, not sparse: 14px body text, 24px card padding, a 1200px content column, a two-column work area that collapses to one below 960px. Surfaces are flat, separated by 1px hairlines. Light and dark modes are the same system: every token has a dark counterpart and switches with Streamlit's own theme picker without a rerun.\n\nWhat it refuses: the template look of a default Streamlit app (red accent, sidebar navigation, equal cards everywhere, weak hierarchy) and decorative colour.",
+    "keyCharacteristics": [
+      "Zinc neutral ramp, one blue action colour, one amber highlight per view.",
+      "Geist throughout, tabular figures for every number.",
+      "Flat surfaces, 1px borders, 8px cards, 6px controls.",
+      "Top-tab navigation in a white header; no sidebar.",
+      "Every chart framed as title, chart, one-sentence takeaway."
+    ],
+    "rules": [
+      { "name": "The One Amber Rule", "body": "Amber appears at most once per view, on the data mark that answers the page's question. Pages that only explain (About and data) carry none.", "section": "colors" },
+      { "name": "The Blue Acts Rule", "body": "Blue means \"this does something or this is the main series\". Tabs and nav use ink, not blue, for their selected state.", "section": "colors" },
+      { "name": "The Slot Rule", "body": "Plotly figures never take hex values. They draw with placeholder colours #000001 to #000010 that Streamlit swaps for the active theme's ten chart slots: six series (primary, ink, highlight, teal, rose, slate), then muted, border, grid, surface.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "Every price, metric, slider value and number input uses tabular figures.", "section": "typography" },
+      { "name": "The Three Weights Rule", "body": "400, 500 and 600 only. No bold 700, no light weights.", "section": "typography" },
+      { "name": "The Hairline Rule", "body": "Cards are separated by a 1px border, never by a drop shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do take every GUI colour from theme.css tokens in CSS and from chart slot placeholders in Plotly, so both modes switch without a rerun.",
+      "Do keep amber to one data mark per view, and none on explanatory pages.",
+      "Do give every chart a finding-style title and a takeaway sentence beneath it.",
+      "Do show prices with the rupee sign, Indian grouping and a lakh figure, in tabular figures.",
+      "Do keep text at 4.5:1 or better on page and cards in both modes, and unselected control outlines at 3:1."
+    ],
+    "donts": [
+      "Don't use drop shadows on cards; separate with a 1px hairline.",
+      "Don't put a coloured stripe on one side of a note; use a full border and tint.",
+      "Don't colour tabs or nav selection blue; ink carries selection there.",
+      "Don't add a font weight beyond 400, 500 and 600, or a second display family.",
+      "Don't use the A7 report palette (teal #0E7C7B, warm off-white #F7F5F0, DM Serif, Inter) in the GUI. Static matplotlib and SHAP report figures keep it by design (constants at the top of src/carprice/palette.py); they sit outside this system."
+    ]
+  }
+}

@@ -1,58 +1,84 @@
-/* Used Car Price Predictor: A7 design system.
-   Colours are the A7 palette only. Three type sizes: 44px (the estimate), 28px (page title,
-   metric values), 14px (everything else). Spacing on the 4px scale. */
+/* Used Car Price Predictor: GUI design system (D-045).
+   Zinc neutrals, one blue action colour, amber as the single highlight per view.
+   Geist for UI and headings, Geist Mono for tabular data. Spacing on the 4px scale.
+   Type scale: 12 / 13 / 14 / 16 / 20 / 28 / 48 px. */
 
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap");
 
 :root {
-  --cp-bg: #F7F5F0;
+  --cp-bg: #FAFAFA;
   --cp-surface: #FFFFFF;
-  --cp-ink: #14213D;
-  --cp-muted: #6B7280;
-  --cp-teal: #0E7C7B;
-  --cp-amber: #F2A541;
-  --cp-border: #E3DED3;
-  --cp-positive: #2E7D32;
-  --cp-negative: #C0392B;
-  --cp-teal-tint: rgba(14, 124, 123, 0.08);
-  --cp-teal-ring: rgba(14, 124, 123, 0.18);
+  --cp-ink: #18181B;
+  --cp-muted: #71717A;
+  --cp-primary: #2F5BEA;
+  --cp-highlight: #D97706;
+  --cp-border: #E4E4E7;
+  --cp-positive: #15803D;
+  --cp-negative: #DC2626;
+  --cp-subtle: #F4F4F5;
+  --cp-border-strong: #D4D4D8;
+  --cp-primary-hover: #2449C9;
+  --cp-control-border: #8B8B94;
+  --cp-primary-ring: rgba(47, 91, 234, 0.22);
+  --cp-caution-bg: #FFFBEB;
+  --cp-caution-border: #FDE68A;
+  --cp-caution-ink: #B45309;
+  --cp-error-bg: #FEF2F2;
+  --cp-error-border: #FECACA;
 
   --cp-s1: 4px;  --cp-s2: 8px;  --cp-s3: 12px; --cp-s4: 16px;
   --cp-s5: 24px; --cp-s6: 32px; --cp-s7: 48px;
 
-  --cp-fs-xl: 44px;
-  --cp-fs-lg: 28px;
+  --cp-fs-xs: 12px;
+  --cp-fs-sm: 13px;
   --cp-fs-md: 14px;
+  --cp-fs-lg: 16px;
+  --cp-fs-xl: 20px;
+  --cp-fs-2xl: 28px;
+  --cp-fs-3xl: 48px;
 
-  --cp-radius: 12px;
-  --cp-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --cp-font-display: "Fraunces", "DM Serif Display", Georgia, serif;
-  --cp-font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
-  --cp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --cp-radius: 8px;
+  --cp-radius-sm: 6px;
+  --cp-font-ui: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cp-font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
+  --cp-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ---- Dark mode (D-036) --------------------------------------------------------------
    Streamlit sets `color-scheme` on the app container to match the active theme (System,
    Light or Dark in the toolbar menu). light-dark() resolves against it on each element,
-   so these cards switch instantly with the native widgets, with no rerun. Browsers without
+   so these tokens switch instantly with the native widgets, with no rerun. Browsers without
    light-dark() keep the light values above. Values mirror [theme.dark] in config.toml. */
 @supports (color: light-dark(#000, #fff)) {
   :root {
-    --cp-bg: light-dark(#F7F5F0, #0F1626);
-    --cp-surface: light-dark(#FFFFFF, #18233A);
-    --cp-ink: light-dark(#14213D, #EEEAE1);
-    --cp-muted: light-dark(#6B7280, #A4ACBA);
-    --cp-teal: light-dark(#0E7C7B, #3FB1AF);
-    --cp-border: light-dark(#E3DED3, #2C3852);
-    --cp-positive: light-dark(#2E7D32, #5DBB63);
-    --cp-negative: light-dark(#C0392B, #E8695B);
-    --cp-teal-tint: light-dark(rgba(14, 124, 123, 0.08), rgba(63, 177, 175, 0.12));
-    --cp-teal-ring: light-dark(rgba(14, 124, 123, 0.18), rgba(63, 177, 175, 0.30));
+    --cp-bg: light-dark(#FAFAFA, #0B0B0D);
+    --cp-surface: light-dark(#FFFFFF, #141417);
+    --cp-ink: light-dark(#18181B, #EDEDEF);
+    --cp-muted: light-dark(#71717A, #A1A1AA);
+    --cp-primary: light-dark(#2F5BEA, #7C9BFF);
+    --cp-highlight: light-dark(#D97706, #F59E0B);
+    --cp-border: light-dark(#E4E4E7, #27272A);
+    --cp-positive: light-dark(#15803D, #4ADE80);
+    --cp-negative: light-dark(#DC2626, #F87171);
+    --cp-subtle: light-dark(#F4F4F5, #1B1B1F);
+    --cp-border-strong: light-dark(#D4D4D8, #3F3F46);
+    --cp-control-border: light-dark(#8B8B94, #71717A);
+    --cp-primary-ring: light-dark(rgba(47, 91, 234, 0.22), rgba(124, 155, 255, 0.32));
+    --cp-caution-bg: light-dark(#FFFBEB, rgba(245, 158, 11, 0.08));
+    --cp-caution-border: light-dark(#FDE68A, rgba(245, 158, 11, 0.32));
+    --cp-caution-ink: light-dark(#B45309, #FBBF24);
+    --cp-error-bg: light-dark(#FEF2F2, rgba(248, 113, 113, 0.08));
+    --cp-error-border: light-dark(#FECACA, rgba(248, 113, 113, 0.32));
   }
 }
 
+/* ---- Browser surfaces ---------------------------------------------------------------- */
+::selection { background: var(--cp-primary-ring); color: inherit; }
+html { caret-color: var(--cp-primary); scrollbar-color: var(--cp-border-strong) transparent; }
+a { text-underline-offset: 3px; }
+
 /* The static SHAP report figure is a light PNG; frame it as a light panel in dark mode. */
-[data-testid="stImage"] img { border-radius: var(--cp-s2); background: #FFFFFF; }
+[data-testid="stImage"] img { border-radius: var(--cp-radius-sm); background: #FFFFFF; }
 
 /* ---- Chrome: hide footer, decoration bar, status; keep top navigation and the ⋮ menu,
    whose first row is the System / Light / Dark theme picker (D-036) ------------------- */
@@ -61,44 +87,83 @@ footer, [data-testid="stDecoration"], [data-testid="stStatusWidget"],
   display: none !important;
 }
 header[data-testid="stHeader"] {
-  background: var(--cp-bg);
+  background: var(--cp-surface);
   border-bottom: 1px solid var(--cp-border);
+}
+[data-testid="stTopNav"] { gap: var(--cp-s1); }
+/* Wordmark beside the brand mark (st.logo takes an image only) */
+:is(div, button):has(> img[data-testid="stHeaderLogo"]) {
+  display: flex;
+  align-items: center;
+  gap: var(--cp-s3);
+  margin-right: var(--cp-s4);
+}
+:is(div, button):has(> img[data-testid="stHeaderLogo"])::after {
+  content: "Used Car Price Predictor";
+  font-size: var(--cp-fs-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--cp-ink);
+  white-space: nowrap;
+}
+[data-testid="stTopNavLink"] {
+  border-radius: var(--cp-radius-sm);
+  padding: var(--cp-s1) var(--cp-s3);
+  transition: background-color 150ms var(--cp-ease);
+}
+[data-testid="stTopNavLink"] p { font-size: var(--cp-fs-md); font-weight: 500; color: var(--cp-muted); }
+[data-testid="stTopNavLink"]:hover { background: var(--cp-subtle); }
+[data-testid="stTopNavLink"]:hover p { color: var(--cp-ink); }
+[data-testid="stTopNavLink"][aria-current="page"] { background: var(--cp-subtle); }
+[data-testid="stTopNavLink"][aria-current="page"] p { color: var(--cp-ink); }
+[data-testid="stTopNavLink"]:focus-visible {
+  outline: 2px solid var(--cp-primary);
+  outline-offset: 2px;
 }
 
 /* ---- Layout ------------------------------------------------------------------------- */
 .block-container, [data-testid="stMainBlockContainer"] {
   max-width: 1200px;
-  padding-top: var(--cp-s7);
+  padding-top: calc(var(--cp-s7) + var(--cp-s6));
   padding-bottom: var(--cp-s7);
 }
 html, body, [data-testid="stAppViewContainer"] {
   font-family: var(--cp-font-ui);
   font-size: var(--cp-fs-md);
   color: var(--cp-ink);
+  -webkit-font-smoothing: antialiased;
 }
 [data-testid="stVerticalBlock"] { gap: var(--cp-s4); }
 
 /* ---- Typography --------------------------------------------------------------------- */
 .cp-title {
-  font-family: var(--cp-font-display);
-  font-size: var(--cp-fs-lg);
+  font-family: var(--cp-font-ui);
+  font-size: var(--cp-fs-2xl);
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
   color: var(--cp-ink);
   margin: 0 0 var(--cp-s2) 0;
+  padding: 0;
+  text-wrap: balance;
 }
-.cp-lede { font-size: var(--cp-fs-md); color: var(--cp-ink); margin: 0; max-width: 72ch; }
+.cp-lede {
+  font-size: var(--cp-fs-lg);
+  line-height: 1.5;
+  color: var(--cp-muted);
+  margin: 0 0 var(--cp-s2) 0;
+  max-width: 68ch;
+}
 .cp-section {
   font-size: var(--cp-fs-md);
   font-weight: 600;
+  letter-spacing: -0.005em;
   color: var(--cp-ink);
-  padding-bottom: var(--cp-s2);
-  margin: var(--cp-s2) 0 0 0;
-  border-bottom: 1px solid var(--cp-border);
+  margin: var(--cp-s1) 0 0 0;
 }
-.cp-caption { font-size: var(--cp-fs-md); color: var(--cp-muted); margin: 0; }
-.cp-mono { font-family: var(--cp-font-mono); font-variant-numeric: tabular-nums; }
+.cp-caption { font-size: var(--cp-fs-sm); line-height: 1.55; color: var(--cp-muted); margin: 0; }
+.cp-mono, .cp-num { font-variant-numeric: tabular-nums; }
+.cp-mono { font-family: var(--cp-font-mono); font-size: 0.95em; }
 
 /* ---- Cards -------------------------------------------------------------------------- */
 .cp-card {
@@ -107,7 +172,6 @@ html, body, [data-testid="stAppViewContainer"] {
   border-radius: var(--cp-radius);
   padding: var(--cp-s5);
 }
-.cp-card { animation: cp-rise 320ms var(--cp-ease) both; }
 .cp-card + .cp-card { margin-top: var(--cp-s4); }
 
 /* Bordered containers made with ui.panel(); the key class is the only stable hook. */
@@ -115,122 +179,185 @@ html, body, [data-testid="stAppViewContainer"] {
   border-radius: var(--cp-radius);
   border-color: var(--cp-border) !important;
   background: var(--cp-surface);
+  padding: var(--cp-s5) !important;
+}
+[class*="st-key-card-"] > [data-testid="stVerticalBlock"] { gap: var(--cp-s3); }
+
+/* Form groups inside the input panel: hairline between groups, more space above than below */
+.st-key-card-inputs [data-testid="stElementContainer"]:has(.cp-section):not(:first-child) {
+  border-top: 1px solid var(--cp-border);
+  padding-top: var(--cp-s4);
+  margin-top: var(--cp-s2);
 }
 
 /* Metric card */
-.cp-metric-label { font-size: var(--cp-fs-md); font-weight: 500; color: var(--cp-ink); margin: 0; }
+.cp-metric-label { font-size: var(--cp-fs-sm); font-weight: 500; color: var(--cp-muted); margin: 0; }
 .cp-metric-value {
-  font-family: var(--cp-font-mono);
-  font-size: var(--cp-fs-lg);
-  font-weight: 500;
-  line-height: 1.25;
+  font-size: var(--cp-fs-2xl);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
   color: var(--cp-ink);
-  margin: var(--cp-s2) 0 var(--cp-s1) 0;
+  margin: var(--cp-s2) 0 var(--cp-s2) 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* The estimate: the largest element on the page */
+/* A row of metric cards shares one height */
+[data-testid="stHorizontalBlock"]:has(.cp-metric-value) { align-items: stretch; }
+[data-testid="stColumn"]:has(.cp-metric-value)
+  :is([data-testid="stVerticalBlock"], [data-testid="stElementContainer"], [data-testid="stHtml"]),
+.cp-card:has(.cp-metric-value) {
+  height: 100%;
+}
+
+/* The estimate: the largest element on the page, and the app's one authored motion */
 .cp-estimate-label { font-size: var(--cp-fs-md); font-weight: 500; color: var(--cp-muted); margin: 0; }
 .cp-estimate {
-  font-family: var(--cp-font-mono);
-  font-size: var(--cp-fs-xl);
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-size: var(--cp-fs-3xl);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
   color: var(--cp-ink);
-  margin: var(--cp-s2) 0 var(--cp-s1) 0;
+  margin: var(--cp-s2) 0 var(--cp-s2) 0;
   font-variant-numeric: tabular-nums;
-  animation: cp-rise 420ms var(--cp-ease) both;
+  animation: cp-reveal 520ms var(--cp-ease) both;
 }
-.cp-estimate-lakh { font-family: var(--cp-font-mono); font-size: var(--cp-fs-md); color: var(--cp-muted); }
+.cp-estimate-stale { color: var(--cp-muted); }
+.cp-estimate-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cp-s1) var(--cp-s4);
+  font-size: var(--cp-fs-md);
+  color: var(--cp-muted);
+  margin: 0;
+}
+.cp-estimate-meta strong { color: var(--cp-ink); font-weight: 500; }
 
-/* Notes */
+/* Notes: full border and tint, never a side bar */
 .cp-note {
   border: 1px solid var(--cp-border);
-  border-left: 3px solid var(--cp-teal);
-  border-radius: var(--cp-s2);
-  background: var(--cp-surface);
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-subtle);
   padding: var(--cp-s3) var(--cp-s4);
   font-size: var(--cp-fs-md);
+  line-height: 1.55;
   color: var(--cp-ink);
-  animation: cp-rise 280ms var(--cp-ease) both;
 }
 .cp-note strong { font-weight: 600; }
-.cp-note-caution { border-left-color: var(--cp-negative); }
-.cp-note-caution strong { color: var(--cp-negative); }
-.cp-note-error { border-left-color: var(--cp-negative); }
+.cp-note-caution { background: var(--cp-caution-bg); border-color: var(--cp-caution-border); }
+.cp-note-caution strong { color: var(--cp-caution-ink); }
+.cp-note-error { background: var(--cp-error-bg); border-color: var(--cp-error-border); }
+.cp-note-error strong { color: var(--cp-negative); }
 .cp-note ul { margin: var(--cp-s2) 0 0 0; padding-left: var(--cp-s5); }
 .cp-note li + li { margin-top: var(--cp-s1); }
+.cp-note code { font-family: var(--cp-font-mono); font-size: var(--cp-fs-sm); }
 
 /* Stale-result badge */
 .cp-pill {
-  display: inline-block;
-  font-size: var(--cp-fs-md);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cp-s2);
+  margin-top: var(--cp-s3);
+  font-size: var(--cp-fs-sm);
+  font-weight: 500;
   padding: var(--cp-s1) var(--cp-s3);
   border-radius: 999px;
-  border: 1px solid var(--cp-border);
-  background: var(--cp-bg);
-  color: var(--cp-ink);
+  border: 1px solid var(--cp-caution-border);
+  background: var(--cp-caution-bg);
+  color: var(--cp-caution-ink);
+}
+.cp-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* Empty state */
-.cp-empty { text-align: left; padding: var(--cp-s6) var(--cp-s5); }
-.cp-empty .cp-section { border: none; padding: 0; }
+.cp-empty { padding: var(--cp-s7) var(--cp-s6); border-style: dashed; background: transparent; }
+.cp-empty .cp-section { margin-bottom: var(--cp-s1); }
 
 /* ---- Widgets ------------------------------------------------------------------------ */
 .stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button {
-  font-weight: 600;
-  border-radius: var(--cp-s2);
-  transition: transform 150ms var(--cp-ease), background-color 150ms var(--cp-ease),
-              border-color 150ms var(--cp-ease);
+  font-weight: 500;
+  min-height: 40px;
+  border-radius: var(--cp-radius-sm);
+  transition: background-color 150ms var(--cp-ease), border-color 150ms var(--cp-ease),
+              box-shadow 150ms var(--cp-ease);
 }
-.stButton > button:hover, .stDownloadButton > button:hover { transform: translateY(-1px); }
-.stButton > button:active, .stDownloadButton > button:active { transform: translateY(0); }
+.stButton > button[kind="primary"]:hover, .stDownloadButton > button[kind="primary"]:hover {
+  background-color: var(--cp-primary-hover);
+  border-color: var(--cp-primary-hover);
+}
+.stButton > button[kind="secondary"]:hover, .stDownloadButton > button[kind="secondary"]:hover {
+  background-color: var(--cp-subtle);
+  border-color: var(--cp-border-strong);
+  color: var(--cp-ink);
+}
 .stButton > button:focus-visible, .stDownloadButton > button:focus-visible {
-  outline: 2px solid var(--cp-teal);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cp-primary-ring);
 }
-[data-baseweb="input"], [data-baseweb="select"] > div, [data-baseweb="textarea"] {
+.stButton > button:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Text-like fields (react-aria based since Streamlit 1.5x): number inputs, selects, multiselects */
+[data-testid="stNumberInputContainer"], .stSelectbox [role="group"], .stMultiSelect [role="group"],
+[data-testid="stTextInputRootElement"] {
   transition: box-shadow 150ms var(--cp-ease), border-color 150ms var(--cp-ease);
 }
-[data-baseweb="input"]:focus-within, [data-baseweb="select"] > div:focus-within {
-  box-shadow: 0 0 0 3px var(--cp-teal-ring);
+[data-testid="stNumberInputContainer"]:hover:not(:focus-within),
+.stSelectbox [role="group"]:hover:not(:focus-within),
+.stMultiSelect [role="group"]:hover:not(:focus-within) {
+  border-color: var(--cp-border-strong);
 }
-[data-testid="stWidgetLabel"] p { font-size: var(--cp-fs-md); font-weight: 500; }
+[data-testid="stNumberInputContainer"]:focus-within, .stSelectbox [role="group"]:focus-within,
+.stMultiSelect [role="group"]:focus-within {
+  border-color: var(--cp-primary);
+  box-shadow: 0 0 0 3px var(--cp-primary-ring);
+}
+[data-testid="stNumberInputField"] { font-variant-numeric: tabular-nums; }
+/* Unselected radio outlines reach 3:1 against the card in both modes */
+[data-testid="stRadioOption"]:not(:has(input:checked)) > div > div:first-child {
+  border-color: var(--cp-control-border);
+}
+[data-testid="stWidgetLabel"] p { font-size: var(--cp-fs-sm); font-weight: 500; color: var(--cp-ink); }
 
-/* Tabs: teal underline that slides */
-[data-baseweb="tab-list"] { gap: var(--cp-s5); border-bottom: 1px solid var(--cp-border); }
-[data-baseweb="tab"] { font-size: var(--cp-fs-md); font-weight: 500; padding: var(--cp-s3) 0; }
-[data-baseweb="tab-highlight"] { background-color: var(--cp-teal); transition: all 220ms var(--cp-ease); }
+/* Tabs: ink text, ink underline (blue is kept for actions) */
+[role="tablist"] { gap: var(--cp-s5); }
+[data-testid="stTab"] p {
+  font-size: var(--cp-fs-md);
+  font-weight: 500;
+  color: var(--cp-muted) !important;
+  transition: color 150ms var(--cp-ease);
+}
+[data-testid="stTab"]:hover p, [data-testid="stTab"][aria-selected="true"] p {
+  color: var(--cp-ink) !important;
+}
+[data-testid="stTab"] .react-aria-SelectionIndicator { background-color: var(--cp-ink) !important; }
+[data-testid="stTab"]:focus-visible { outline: 2px solid var(--cp-primary); outline-offset: 2px; }
 
-/* Streamlit colours selected tabs, toggles and slider values with primaryColor. Brand teal is
-   only 3.6:1 on the dark page, so text in that role uses --cp-teal (brightened in dark mode). */
-[data-testid="stTab"][aria-selected="true"] p,
+/* Streamlit colours toggles, segmented controls and slider values with primaryColor. That
+   blue is only 3.2:1 on the dark page, so text in that role uses --cp-primary (brighter). */
 button[aria-checked="true"] p,
 button[aria-pressed="true"] p,
 [data-testid="stSliderThumbValue"] {
-  color: var(--cp-teal) !important;
+  color: var(--cp-primary) !important;
 }
+[data-testid="stSliderThumbValue"] { font-variant-numeric: tabular-nums; font-weight: 500; }
 
-/* Charts and tables fade in */
-[data-testid="stPlotlyChart"], [data-testid="stDataFrame"], [data-testid="stImage"] {
-  animation: cp-fade 360ms var(--cp-ease) both;
-}
+/* Tables */
+[data-testid="stDataFrame"] { border-radius: var(--cp-radius-sm); }
 
 /* ---- Motion ------------------------------------------------------------------------- */
-@keyframes cp-rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes cp-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+@keyframes cp-reveal {
+  from { opacity: 0; transform: translateY(4px); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---- Responsive: stack columns below 960px ------------------------------------------ */
+/* ---- Responsive --------------------------------------------------------------------- */
 @media (max-width: 960px) {
   [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: var(--cp-s4); }
   [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
@@ -241,5 +368,16 @@ button[aria-pressed="true"] p,
   .block-container, [data-testid="stMainBlockContainer"] {
     padding-left: var(--cp-s4);
     padding-right: var(--cp-s4);
+    padding-top: calc(var(--cp-s7) + var(--cp-s4));
   }
+  .cp-estimate { font-size: 40px; }
+}
+@media (max-width: 640px) {
+  :is(div, button):has(> img[data-testid="stHeaderLogo"])::after { content: none; }
+}
+@media (max-width: 480px) {
+  .cp-title { font-size: 24px; }
+  .cp-lede { font-size: var(--cp-fs-md); }
+  [class*="st-key-card-"] { padding: var(--cp-s4) !important; }
+  .cp-card { padding: var(--cp-s4); }
 }

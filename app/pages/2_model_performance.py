@@ -8,7 +8,7 @@ from carprice.insights import FACTOR_LABELS
 import components  # noqa: F401  (puts src/ on the import path)
 from components.charts import error_histogram, predicted_vs_actual, segment_chart
 from components.data import model_card, report_figure, report_table
-from components.palette import TEAL_TINT
+from components.palette import PRIMARY_TINT
 from components.ui import (
     chart_card,
     format_inr,
@@ -83,7 +83,7 @@ def comparison_table() -> None:
     )
     styled = shown.style.apply(
         lambda row: [
-            f"background-color: {TEAL_TINT}; font-weight: 600" if row["Model"] == chosen else ""
+            f"background-color: {PRIMARY_TINT}; font-weight: 600" if row["Model"] == chosen else ""
             for _ in row
         ],
         axis=1,

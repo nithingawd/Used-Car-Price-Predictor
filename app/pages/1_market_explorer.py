@@ -19,6 +19,7 @@ from components.charts import age_trend_chart, brand_chart, power_scatter, price
 from components.data import market_listings
 from components.ui import (
     chart_card,
+    display_label,
     empty_state,
     format_lakh,
     metric_card,
@@ -35,10 +36,16 @@ def filter_bar(listings: pd.DataFrame) -> MarketFilter:
     with panel("filters"):
         top = st.columns([3, 2, 2])
         brands = top[0].multiselect(
-            "Brands", sorted(listings["brand"].unique()), placeholder="All brands"
+            "Brands",
+            sorted(listings["brand"].unique()),
+            placeholder="All brands",
+            format_func=display_label,
         )
         fuels = top[1].multiselect(
-            "Fuel", sorted(listings["fuel_type"].unique()), placeholder="All fuels"
+            "Fuel",
+            sorted(listings["fuel_type"].unique()),
+            placeholder="All fuels",
+            format_func=display_label,
         )
         gears = top[2].multiselect(
             "Transmission", sorted(listings["transmission_type"].unique()), placeholder="Both"
@@ -71,13 +78,15 @@ def summary_strip(filtered: pd.DataFrame) -> None:
 
 def distribution_chart(filtered: pd.DataFrame) -> None:
     """Price distribution with an optional log axis."""
-    log_x = st.toggle(
-        "Log price axis", value=True, help="A log axis spreads out the many cheaper cars."
-    )
     median = filtered["selling_price"].median()
     q75 = filtered["selling_price"].quantile(0.75)
     chart_card(
-        price_histogram(filtered, log_x),
+        lambda: price_histogram(
+            filtered,
+            st.toggle(
+                "Log price axis", value=True, help="A log axis spreads out the many cheaper cars."
+            ),
+        ),
         f"Half of these listings ask less than {format_lakh(median)}",
         f"Three in four list below {format_lakh(q75)}; a long tail of luxury cars stretches far "
         "to the right, which is why the model works on log prices.",
@@ -138,9 +147,10 @@ def brands_chart(filtered: pd.DataFrame) -> None:
     leader = ranking.iloc[0]
     chart_card(
         brand_chart(ranking),
-        f"{leader['brand']} has the highest median price ({format_lakh(leader['median_price'])})",
+        f"{display_label(leader['brand'])} has the highest median price "
+        f"({format_lakh(leader['median_price'])})",
         f"Only brands with at least {gui.brand_chart_min_listings} listings are ranked; the "
-        "label shows how many listings each median rests on.",
+        "number after each brand is how many listings its median rests on.",
     )
 
 
